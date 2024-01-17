@@ -2,6 +2,7 @@
 
 import os
 import xlsxwriter
+from xlsxwriter.utility import xl_rowcol_to_cell
 import pandas as pd
 from glob import glob
 
@@ -25,13 +26,17 @@ DEFAULT_OUTPUT_DIR = './out/'
 # unix glob format
 INPUT_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1} *.csv'
 YEAR = 2024
+# TODO: change if budget gets adjusted
+BUDGET_PER_MONTH = { i: 1000.00 for i in range(1, 13) }
 
 class Writer:
 	def __init__(self, filename: str):
 		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter')
 		self.workbook = self.excelWriter.book
+		currency = { 'num_format': '$#,##0.00' }
 		self.formats = {
-			'currency': self.workbook.add_format({'num_format': '$#,##0.00'})
+			'currency': self.workbook.add_format(currency),
+			'border_currency': self.workbook.add_format({ 'border': True, **currency }),
 		}
 
 	@staticmethod
@@ -90,7 +95,7 @@ class Writer:
 		)
 		sheet.add_table(0, start_col, rows + 1, start_col + cols, {
 			'columns': [
-				{ 'header': 'Category' },
+				{ 'header': 'Category', 'total_string': 'Total' },
 				{
 					'header': 'Sum of Amount',
 					'format': self.formats['currency'],
@@ -100,16 +105,20 @@ class Writer:
 			'name': sheet_name + 'Pivot',
 			'total_row': 1
 		})
-		# Stupid hack because format in add_table isn't work
-		for cells in ('C:C', 'F:F'):
-			sheet.set_column(cells, None, self.formats['currency'])
+		sheet.write(rows + 2, start_col, 'Budget', self.formats['border_currency'])
+		sheet.write(rows + 2, start_col + 1, BUDGET_PER_MONTH[month], self.formats['border_currency'])
+		sheet.write(rows + 3, start_col, 'Over/Under', self.formats['border_currency'])
+		sheet.write(rows + 3, start_col + 1, f'={BUDGET_PER_MONTH[month]}-{xl_rowcol_to_cell(rows + 1, start_col + 1)}', self.formats['border_currency'])
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.add_series({
 			'categories': [sheet_name, 1, start_col, rows, start_col],
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
 			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
 		})
-		sheet.insert_chart(rows + 2, start_col, chart)
+		sheet.insert_chart(rows + 4, start_col, chart)
+		# Stupid hack because format in add_table isn't work
+		for cells in ('C:C', 'F:F'):
+			sheet.set_column(cells, None, self.formats['currency'])
 		sheet.autofit()
 
 	def handle_month(self, month: int):
@@ -121,7 +130,7 @@ class Writer:
 
 def main():
 	'''Driver Code'''
-	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {2024}.xlsx'))
+	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {YEAR}.xlsx'))
 	for month in MONTHS.keys():
 		writer.handle_month(month)
 		break
