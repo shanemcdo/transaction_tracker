@@ -103,6 +103,13 @@ class Writer:
 		# Stupid hack because format in add_table isn't work
 		for cells in ('C:C', 'F:F'):
 			sheet.set_column(cells, None, self.formats['currency'])
+		chart = self.workbook.add_chart({ 'type': 'pie' })
+		chart.add_series({
+			'categories': [sheet_name, 1, start_col, rows, start_col],
+			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
+			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
+		})
+		sheet.insert_chart(rows + 2, start_col, chart)
 		sheet.autofit()
 
 	def handle_month(self, month: int):
