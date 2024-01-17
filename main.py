@@ -28,16 +28,20 @@ INPUT_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1} *.csv'
 YEAR = 2024
 # TODO: change if budget gets adjusted
 BUDGET_PER_MONTH = { i: 1000.00 for i in range(1, 13) }
+BUDGET_PER_MONTH[13] = BUDGET_PER_MONTH[1] * 12
 
 class Writer:
 	def __init__(self, filename: str):
 		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter')
 		self.workbook = self.excelWriter.book
 		currency = { 'num_format': '$#,##0.00' }
+		border = { 'border': True }
 		self.formats = {
 			'currency': self.workbook.add_format(currency),
-			'border_currency': self.workbook.add_format({ 'border': True, **currency }),
+			'border': self.workbook.add_format(border),
+			'border_currency': self.workbook.add_format({ **border, **currency }),
 		}
+		self.data = {}
 
 	@staticmethod
 	def get_csv_filename_from_month(month: str) -> str:
@@ -58,10 +62,11 @@ class Writer:
 			# get rid of warning
 			engine='python'
 		).sort_values(by = 'Date')
+		self.data[month] = data
 		return data
 
-	def write_month(self, month: int, data: pd.DataFrame):
-		sheet_name = MONTHS[month]
+	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None):
+		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		data.to_excel(
 			self.excelWriter,
 			sheet_name = sheet_name,
@@ -70,7 +75,7 @@ class Writer:
 		rows, cols = data.shape
 		cols -= 1
 		sheet = self.excelWriter.sheets[sheet_name]
-		sheet.add_table(0, 0, rows, cols, {
+		sheet.add_table(0, 0, 1000, cols, {
 			'columns': [
 				{ 'header': 'Date' },
 				{ 'header': 'Category' },
@@ -93,18 +98,19 @@ class Writer:
 			index = False,
 			startcol = start_col
 		)
-		sheet.add_table(0, start_col, rows + 1, start_col + cols, {
-			'columns': [
-				{ 'header': 'Category', 'total_string': 'Total' },
-				{
-					'header': 'Sum of Amount',
-					'format': self.formats['currency'],
-					'total_function': 'sum'
-				},
-			],
-			'name': sheet_name + 'Pivot',
-			'total_row': 1
-		})
+		if not pivot.empty:
+			sheet.add_table(0, start_col, rows + 1, start_col + cols, {
+				'columns': [
+					{ 'header': 'Category', 'total_string': 'Total' },
+					{
+						'header': 'Sum of Amount',
+						'format': self.formats['currency'],
+						'total_function': 'sum'
+					},
+				],
+				'name': sheet_name + 'Pivot',
+				'total_row': 1
+			})
 		sheet.write(rows + 2, start_col, 'Budget', self.formats['border_currency'])
 		sheet.write(rows + 2, start_col + 1, BUDGET_PER_MONTH[month], self.formats['border_currency'])
 		sheet.write(rows + 3, start_col, 'Over/Under', self.formats['border_currency'])
@@ -122,8 +128,23 @@ class Writer:
 		sheet.autofit()
 
 	def handle_month(self, month: int):
-		data = self.read_month(month)
+		try:
+			data = self.read_month(month)
+		except FileNotFoundError:
+			data = pd.DataFrame({
+				'Date': [],
+				'Category': [],
+				'Amount': [],
+				'Note': [],
+			})
 		self.write_month(month, data)
+
+	def write_summary(self):
+		self.write_month(
+			13,
+			pd.concat(self.data.values()),
+			'Summary'
+		)
 
 	def save(self):
 		self.workbook.close()
@@ -133,7 +154,7 @@ def main():
 	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {YEAR}.xlsx'))
 	for month in MONTHS.keys():
 		writer.handle_month(month)
-		break
+	writer.write_summary()
 	writer.save()
 
 if __name__ == '__main__':
