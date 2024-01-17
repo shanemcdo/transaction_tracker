@@ -57,7 +57,7 @@ class Writer:
 			sep =', |,',
 			# get rid of warning
 			engine='python'
-		)
+		).sort_values(by = 'Date')
 		return data
 
 	def write_month(self, month: int, data: pd.DataFrame):
