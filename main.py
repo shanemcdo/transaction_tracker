@@ -119,6 +119,7 @@ class Writer:
 		sheet.write(rows + 3, start_col + 1, f'={BUDGET_PER_MONTH[month]}-{xl_rowcol_to_cell(rows + 1, start_col + 1)}', self.formats['border_currency'])
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.set_title({ 'name': 'By Category' })
+		chart.set_legend({ 'position': 'bottom' })
 		chart.add_series({
 			'categories': [sheet_name, 1, start_col, rows, start_col],
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
@@ -126,13 +127,13 @@ class Writer:
 		})
 		sheet.insert_chart(rows + 4, start_col, chart, {'y_scale': 2})
 		start_col += cols + 1
-		data['Date'] = data['Date'].apply(lambda x: datetime.strptime(x, '%m/%d/%Y').strftime('%w%a'))
+		data['Day'] = data['Date'].apply(lambda x: datetime.strptime(x, '%m/%d/%Y').strftime('%w%a'))
 		pivot = data.pivot_table(
 			values = 'Amount',
-			index = 'Date',
+			index = 'Day',
 			aggfunc = 'sum'
 		).reset_index()
-		pivot['Date'] = pivot['Date'].apply(lambda x: x[1:])
+		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		pivot.to_excel(
 			self.excelWriter,
 			sheet_name = sheet_name,
@@ -157,6 +158,7 @@ class Writer:
 			})
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.set_title({ 'name': 'By Day' })
+		chart.set_legend({ 'position': 'bottom' })
 		chart.add_series({
 			'Name': 'By Day',
 			'categories': [sheet_name, 1, start_col, rows, start_col],
