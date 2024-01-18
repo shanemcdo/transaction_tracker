@@ -3,6 +3,7 @@
 import os
 import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell
+from datetime import datetime
 import pandas as pd
 from glob import glob
 
@@ -62,7 +63,7 @@ class Writer:
 			# get rid of warning
 			engine='python'
 		).sort_values(by = 'Date')
-		self.data[month] = data
+		self.data[month] = data.copy()
 		return data
 
 	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None):
@@ -109,19 +110,60 @@ class Writer:
 					},
 				],
 				'name': sheet_name + 'Pivot',
-				'total_row': 1
+				'total_row': 1,
+				'style': 'Table Style Medium 10'
 			})
 		sheet.write(rows + 2, start_col, 'Budget', self.formats['border_currency'])
 		sheet.write(rows + 2, start_col + 1, BUDGET_PER_MONTH[month], self.formats['border_currency'])
 		sheet.write(rows + 3, start_col, 'Over/Under', self.formats['border_currency'])
 		sheet.write(rows + 3, start_col + 1, f'={BUDGET_PER_MONTH[month]}-{xl_rowcol_to_cell(rows + 1, start_col + 1)}', self.formats['border_currency'])
 		chart = self.workbook.add_chart({ 'type': 'pie' })
+		chart.set_title({ 'name': 'By Category' })
 		chart.add_series({
 			'categories': [sheet_name, 1, start_col, rows, start_col],
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
 			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
 		})
-		sheet.insert_chart(rows + 4, start_col, chart)
+		sheet.insert_chart(rows + 4, start_col, chart, {'y_scale': 2})
+		start_col += cols + 1
+		data['Date'] = data['Date'].apply(lambda x: datetime.strptime(x, '%m/%d/%Y').strftime('%w%a'))
+		pivot = data.pivot_table(
+			values = 'Amount',
+			index = 'Date',
+			aggfunc = 'sum'
+		).reset_index()
+		pivot['Date'] = pivot['Date'].apply(lambda x: x[1:])
+		pivot.to_excel(
+			self.excelWriter,
+			sheet_name = sheet_name,
+			index = False,
+			startcol = start_col
+		)
+		rows, cols = pivot.shape
+		cols -= 1
+		if not pivot.empty:
+			sheet.add_table(0, start_col, rows + 1, start_col + cols, {
+				'columns': [
+					{ 'header': 'Day', 'total_string': 'Total' },
+					{
+						'header': 'Sum of Amount',
+						'format': self.formats['currency'],
+						'total_function': 'sum'
+					},
+				],
+				'name': sheet_name + 'Pivot2',
+				'total_row': 1,
+				'style': 'Table Style Medium 11'
+			})
+		chart = self.workbook.add_chart({ 'type': 'pie' })
+		chart.set_title({ 'name': 'By Day' })
+		chart.add_series({
+			'Name': 'By Day',
+			'categories': [sheet_name, 1, start_col, rows, start_col],
+			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
+			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
+		})
+		sheet.insert_chart(rows + 4, start_col + 4, chart, {'y_scale': 2})
 		# Stupid hack because format in add_table isn't work
 		for cells in ('C:C', 'F:F'):
 			sheet.set_column(cells, None, self.formats['currency'])
