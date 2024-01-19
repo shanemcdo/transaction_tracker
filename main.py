@@ -29,7 +29,7 @@ INPUT_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
 YEAR = 2024
 # TODO: change if budget gets adjusted
 BUDGET_PER_MONTH = { i: 1000.00 for i in range(1, 13) }
-BUDGET_PER_MONTH[13] = BUDGET_PER_MONTH[1] * 12
+BUDGET_PER_MONTH[13] = sum(BUDGET_PER_MONTH.values())
 EMPTY = pd.DataFrame({
 	'Date': [],
 	'Category': [],
