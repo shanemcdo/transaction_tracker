@@ -4,6 +4,7 @@ import os
 import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell
 from datetime import datetime
+import calendar
 import pandas as pd
 from glob import glob
 
@@ -37,7 +38,24 @@ EMPTY = pd.DataFrame({
 	'Note': [],
 })
 
+def parse_date(date: str) -> datetime:
+	return datetime.strptime(date, '%m/%d/%Y')
+
+def stringify_date(day: int) -> str:
+	if day < 1:
+		return ''
+	match day % 10:
+		case 1:
+			return f'{day}st'
+		case 2:
+			return f'{day}nd'
+		case 3:
+			return f'{day}rd'
+		case _:
+			return f'{day}th'
+
 class Writer:
+
 	def __init__(self, filename: str):
 		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter')
 		self.workbook = self.excelWriter.book
@@ -49,6 +67,12 @@ class Writer:
 			'border_currency': self.workbook.add_format({ **border, **currency }),
 		}
 		self.data = {}
+		self.style_count = 10
+
+	def get_style(self) -> dict[str, str]:
+		result = { 'style': f'Table Style Medium {self.style_count}' }
+		self.style_count += 1
+		return result
 
 	@staticmethod
 	def get_csv_filename_from_month(month: str) -> str:
@@ -78,16 +102,15 @@ class Writer:
 		return data, carry_over
 
 	def write_month(self, month: int, data: pd.DataFrame, carry_over: float, sheet_name: str = None):
+		chart_series_kwargs = { 'data_labels': { 'category': True, 'value': True, 'percentage': True, 'position': 'best_fit' } }
+		chart_legend_kwargs = { 'position': 'none' }
+		chart_insert_kwargs = { 'y_scale': 2 }
+		pivot_kwargs = { 'values': 'Amount', 'aggfunc': 'sum' }
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
-		data.to_excel(
-			self.excelWriter,
-			sheet_name = sheet_name,
-			index = False
-		)
+		sheet = self.workbook.add_worksheet(sheet_name)
 		rows, cols = data.shape
 		cols -= 1
-		sheet = self.excelWriter.sheets[sheet_name]
-		sheet.add_table(0, 0, 1000, cols, {
+		sheet.add_table(0, 0, rows, cols, {
 			'columns': [
 				{ 'header': 'Date' },
 				{ 'header': 'Category' },
@@ -95,35 +118,29 @@ class Writer:
 				{ 'header': 'Note' },
 			],
 			'name': sheet_name + 'Table',
+			'data': data.values.tolist(),
 		})
 		start_col = cols + 1
 		pivot = data.pivot_table(
-			values = 'Amount',
 			index = 'Category',
-			aggfunc = 'sum'
+			**pivot_kwargs
 		).reset_index()
 		rows, cols = pivot.shape
 		cols -= 1
-		pivot.to_excel(
-			self.excelWriter,
-			sheet_name = sheet_name,
-			index = False,
-			startcol = start_col
-		)
-		if not pivot.empty:
-			sheet.add_table(0, start_col, rows + 1, start_col + cols, {
-				'columns': [
-					{ 'header': 'Category', 'total_string': 'Total' },
-					{
-						'header': 'Sum of Amount',
-						'format': self.formats['currency'],
-						'total_function': 'sum'
-					},
-				],
-				'name': sheet_name + 'Pivot',
-				'total_row': 1,
-				'style': 'Table Style Medium 10'
-			})
+		sheet.add_table(0, start_col, rows + 1, start_col + cols, {
+			'columns': [
+				{ 'header': 'Category', 'total_string': 'Total' },
+				{
+					'header': 'Sum of Amount',
+					'format': self.formats['currency'],
+					'total_function': 'sum'
+				},
+			],
+			'name': sheet_name + 'CatPivot',
+			'total_row': True,
+			'data': pivot.values.tolist(),
+			**self.get_style()
+		})
 		start_row = rows + 2
 		budget_info = pd.DataFrame([
 			['Budget', BUDGET_PER_MONTH[month]],
@@ -131,67 +148,77 @@ class Writer:
 			['New Budget', f'={xl_rowcol_to_cell(start_row, start_col + 1)}+{xl_rowcol_to_cell(start_row + 1, start_col + 1)}'],
 			['Over/Under', f'={xl_rowcol_to_cell(start_row + 2, start_col + 1)}-{xl_rowcol_to_cell(start_row - 1, start_col + 1)}'],
 		])
-		budget_info.to_excel(
-			self.excelWriter,
-			sheet_name,
-			index = False,
-			header = False,
-			startrow = start_row,
-			startcol = start_col
-		)
+		sheet.add_table(start_row, start_col, start_row + budget_info.shape[0], start_col + budget_info.shape[1] - 1, {
+			'columns': [{}, { 'format': self.formats['currency'] }],
+			'header_row': False,
+			'data': budget_info.values.tolist(),
+			'name': sheet_name + 'BudgetTable',
+			**self.get_style()
+		})
+		start_row += budget_info.shape[0]
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.set_title({ 'name': 'By Category' })
-		chart.set_legend({ 'position': 'bottom' })
+		chart.set_legend(chart_legend_kwargs)
 		chart.add_series({
 			'categories': [sheet_name, 1, start_col, rows, start_col],
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
-			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
+			**chart_series_kwargs
 		})
-		start_row += budget_info.shape[0]
-		sheet.insert_chart(start_row, start_col, chart, {'y_scale': 2})
+		sheet.insert_chart(start_row, start_col, chart, chart_insert_kwargs)
 		start_col += cols + 1
-		data['Day'] = data['Date'].apply(lambda x: datetime.strptime(x, '%m/%d/%Y').strftime('%w%a'))
+		data['Day'] = data['Date'].apply(lambda x: parse_date(x).strftime('%w%a'))
 		pivot = data.pivot_table(
-			values = 'Amount',
 			index = 'Day',
-			aggfunc = 'sum'
+			**pivot_kwargs
 		).reset_index()
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
-		pivot.to_excel(
-			self.excelWriter,
-			sheet_name = sheet_name,
-			index = False,
-			startcol = start_col
-		)
 		rows, cols = pivot.shape
 		cols -= 1
-		if not pivot.empty:
-			sheet.add_table(0, start_col, rows + 1, start_col + cols, {
-				'columns': [
-					{ 'header': 'Day', 'total_string': 'Total' },
-					{
-						'header': 'Sum of Amount',
-						'format': self.formats['currency'],
-						'total_function': 'sum'
-					},
-				],
-				'name': sheet_name + 'Pivot2',
-				'total_row': 1,
-				'style': 'Table Style Medium 11'
-			})
+		sheet.add_table(0, start_col, rows + 1, start_col + cols, {
+			'columns': [
+				{ 'header': 'Day', 'total_string': 'Total' },
+				{
+					'header': 'Sum of Amount',
+					'format': self.formats['currency'],
+					'total_function': 'sum'
+				},
+			],
+			'name': sheet_name + 'DayPivot',
+			'total_row': True,
+			'data': pivot.values.tolist(),
+			**self.get_style()
+		})
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.set_title({ 'name': 'By Day' })
-		chart.set_legend({ 'position': 'bottom' })
+		chart.set_legend(chart_legend_kwargs)
 		chart.add_series({
 			'Name': 'By Day',
 			'categories': [sheet_name, 1, start_col, rows, start_col],
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
-			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
+			**chart_series_kwargs
 		})
-		sheet.insert_chart(start_row, start_col + 4, chart, {'y_scale': 2})
-		# Stupid hack because format in add_table isn't work
-		for cells in ('C:C', 'F:F'):
-			sheet.set_column(cells, None, self.formats['currency'])
+		sheet.insert_chart(start_row, start_col + 4, chart, chart_insert_kwargs)
+		start_col += pivot.shape[1]
+		if 1 <= month <= 12:
+			cal = []
+			for row in calendar.monthcalendar(YEAR, month):
+				cal.append(map(stringify_date, row))
+				cal.append((
+					data.loc[data.Date == f'{month:02d}/{cell:02d}/{YEAR:04d}', 'Amount'].sum()
+					if cell != 0 else ''
+					for cell in row
+				))
+			cal = pd.DataFrame(cal)
+			rows, cols = cal.shape
+			cols -= 1
+			sheet.add_table(0, start_col, rows, start_col + cols, {
+				'columns': [ { 'header': day, 'format': self.formats['currency'] } for day in (
+					'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
+					) ],
+				'data': cal.values.tolist(),
+				**self.get_style()
+			})
+			sheet.set_column(start_col, start_col + cols, 10)
 		sheet.autofit()
 
 	def handle_month(self, month: int):
@@ -215,6 +242,7 @@ class Writer:
 
 def main():
 	'''Driver Code'''
+	calendar.setfirstweekday(calendar.SUNDAY)
 	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {YEAR}.xlsx'))
 	for month in MONTHS.keys():
 		writer.handle_month(month)
