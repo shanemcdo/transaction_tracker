@@ -37,6 +37,7 @@ EMPTY = pd.DataFrame({
 	'Amount': [],
 	'Note': [],
 })
+STARTING_STYLE_COUNT = 10
 
 def parse_date(date: str) -> datetime:
 	return datetime.strptime(date, '%m/%d/%Y')
@@ -67,7 +68,10 @@ class Writer:
 			'border_currency': self.workbook.add_format({ **border, **currency }),
 		}
 		self.data = {}
-		self.style_count = 10
+		self.reset_style_count()
+
+	def reset_style_count(self):
+		self.style_count = STARTING_STYLE_COUNT
 
 	def get_style(self) -> dict[str, str]:
 		result = { 'style': f'Table Style Medium {self.style_count}' }
@@ -103,6 +107,7 @@ class Writer:
 
 	# TODO: clean this up in separate funcs
 	def write_month(self, month: int, data: pd.DataFrame, carry_over: float, sheet_name: str = None):
+		self.reset_style_count()
 		chart_series_kwargs = { 'data_labels': { 'category': True, 'value': True, 'percentage': True, 'position': 'best_fit' } }
 		chart_legend_kwargs = { 'position': 'none' }
 		chart_insert_kwargs = { 'y_scale': 2 }
@@ -165,7 +170,7 @@ class Writer:
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
 			**chart_series_kwargs
 		})
-		sheet.insert_chart(start_row, start_col, chart, chart_insert_kwargs)
+		sheet.insert_chart(max(start_row, 11), start_col, chart, chart_insert_kwargs)
 		start_col += cols + 1
 		data['Day'] = data['Date'].apply(lambda x: parse_date(x).strftime('%w%a'))
 		pivot = data.pivot_table(
@@ -198,7 +203,7 @@ class Writer:
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
 			**chart_series_kwargs
 		})
-		sheet.insert_chart(start_row, start_col + 4, chart, chart_insert_kwargs)
+		sheet.insert_chart(max(start_row, 11), start_col + 4, chart, chart_insert_kwargs)
 		start_col += pivot.shape[1]
 		if 1 <= month <= 12:
 			cal = []
@@ -216,7 +221,7 @@ class Writer:
 			sheet.add_table(*bounds, {
 				'columns': [ { 'header': day, 'format': self.formats['currency'] } for day in (
 					'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
-					) ],
+				) ],
 				'data': cal.values.tolist(),
 				**self.get_style()
 			})
