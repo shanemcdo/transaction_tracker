@@ -25,11 +25,17 @@ MONTHS_SHORT = { key: value[:3] for key, value in MONTHS.items() }
 DEFAULT_INPUT_DIR = './in/'
 DEFAULT_OUTPUT_DIR = './out/'
 # unix glob format
-INPUT_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1} *.csv'
+INPUT_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
 YEAR = 2024
 # TODO: change if budget gets adjusted
 BUDGET_PER_MONTH = { i: 1000.00 for i in range(1, 13) }
 BUDGET_PER_MONTH[13] = BUDGET_PER_MONTH[1] * 12
+EMPTY = pd.DataFrame({
+	'Date': [],
+	'Category': [],
+	'Amount': [],
+	'Note': [],
+})
 
 class Writer:
 	def __init__(self, filename: str):
@@ -55,7 +61,7 @@ class Writer:
 			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
 		return os.path.join(DEFAULT_INPUT_DIR, files[-1])
 
-	def read_month(self, month: int):
+	def read_month(self, month: int) -> (pd.DataFrame, float):
 		filename = self.get_csv_filename_from_month(MONTHS_SHORT[month])
 		data = pd.read_csv(
 			filename,
@@ -63,10 +69,12 @@ class Writer:
 			# get rid of warning
 			engine='python'
 		).sort_values(by = 'Date')
+		carry_over = data.loc[data.Category == 'Carry Over', 'Amount'].sum()
+		data = data[data.Category != 'Carry Over']
 		self.data[month] = data.copy()
-		return data
+		return data, carry_over
 
-	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None):
+	def write_month(self, month: int, data: pd.DataFrame, carry_over: float, sheet_name: str = None):
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		data.to_excel(
 			self.excelWriter,
@@ -113,10 +121,25 @@ class Writer:
 				'total_row': 1,
 				'style': 'Table Style Medium 10'
 			})
-		sheet.write(rows + 2, start_col, 'Budget', self.formats['border_currency'])
-		sheet.write(rows + 2, start_col + 1, BUDGET_PER_MONTH[month], self.formats['border_currency'])
-		sheet.write(rows + 3, start_col, 'Over/Under', self.formats['border_currency'])
-		sheet.write(rows + 3, start_col + 1, f'={BUDGET_PER_MONTH[month]}-{xl_rowcol_to_cell(rows + 1, start_col + 1)}', self.formats['border_currency'])
+		start_row = rows + 2
+		budget_info = pd.DataFrame([
+			['Budget', BUDGET_PER_MONTH[month]],
+			['Carry Over', carry_over],
+			['New Budget', f'={xl_rowcol_to_cell(start_row, start_col + 1)}+{xl_rowcol_to_cell(start_row + 1, start_col + 1)}'],
+			['Over/Under', f'={xl_rowcol_to_cell(start_row + 2, start_col + 1)}-{xl_rowcol_to_cell(start_row - 1, start_col + 1)}'],
+		])
+		budget_info.to_excel(
+			self.excelWriter,
+			sheet_name,
+			index = False,
+			startrow = start_row,
+			startcol = start_col,
+			header = False
+		)
+		# sheet.write(rows + 2, start_col, 'Budget', self.formats['border_currency'])
+		# sheet.write(rows + 2, start_col + 1, BUDGET_PER_MONTH[month] + carry_over, self.formats['border_currency'])
+		# sheet.write(rows + 3, start_col, 'Over/Under', self.formats['border_currency'])
+		# sheet.write(rows + 3, start_col + 1, f'={xl_rowcol_to_cell(rows + 2, start_col + 1)}-{xl_rowcol_to_cell(rows + 1, start_col + 1)}', self.formats['border_currency'])
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.set_title({ 'name': 'By Category' })
 		chart.set_legend({ 'position': 'bottom' })
@@ -125,7 +148,7 @@ class Writer:
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
 			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
 		})
-		sheet.insert_chart(rows + 4, start_col, chart, {'y_scale': 2})
+		sheet.insert_chart(start_row + budget_info.shape[0], start_col, chart, {'y_scale': 2})
 		start_col += cols + 1
 		data['Day'] = data['Date'].apply(lambda x: datetime.strptime(x, '%m/%d/%Y').strftime('%w%a'))
 		pivot = data.pivot_table(
@@ -165,7 +188,7 @@ class Writer:
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
 			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
 		})
-		sheet.insert_chart(rows + 4, start_col + 4, chart, {'y_scale': 2})
+		sheet.insert_chart(start_row, start_col + 4, chart, {'y_scale': 2})
 		# Stupid hack because format in add_table isn't work
 		for cells in ('C:C', 'F:F'):
 			sheet.set_column(cells, None, self.formats['currency'])
@@ -173,20 +196,17 @@ class Writer:
 
 	def handle_month(self, month: int):
 		try:
-			data = self.read_month(month)
+			data, carry_over = self.read_month(month)
 		except FileNotFoundError:
-			data = pd.DataFrame({
-				'Date': [],
-				'Category': [],
-				'Amount': [],
-				'Note': [],
-			})
-		self.write_month(month, data)
+			data = EMPTY.copy()
+			carry_over = 0
+		self.write_month(month, data, carry_over)
 
 	def write_summary(self):
 		self.write_month(
 			13,
-			pd.concat(self.data.values()),
+			pd.concat(self.data.values()) if len(self.data) > 0 else EMPTY.copy(),
+			0,
 			'Summary'
 		)
 
