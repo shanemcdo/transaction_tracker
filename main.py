@@ -54,9 +54,12 @@ class Writer:
 	def get_csv_filename_from_month(month: str) -> str:
 		glob_pattern = INPUT_FILENAME_FORMAT.format(month, YEAR)
 		files = sorted(glob(
-			glob_pattern,
-			root_dir = DEFAULT_INPUT_DIR
-		))
+				glob_pattern,
+				root_dir = DEFAULT_INPUT_DIR
+			),
+			# make the order accurate
+			key = lambda x: x if '(' in x else x.replace('.csv', ' (0).csv')
+		)
 		if len(files) < 1:
 			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
 		return os.path.join(DEFAULT_INPUT_DIR, files[-1])
