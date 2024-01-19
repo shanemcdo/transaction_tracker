@@ -197,10 +197,10 @@ class Writer:
 	def handle_month(self, month: int):
 		try:
 			data, carry_over = self.read_month(month)
+			if not data.empty:
+				self.write_month(month, data, carry_over)
 		except FileNotFoundError:
-			data = EMPTY.copy()
-			carry_over = 0
-		self.write_month(month, data, carry_over)
+			pass
 
 	def write_summary(self):
 		self.write_month(
