@@ -139,10 +139,6 @@ class Writer:
 			startrow = start_row,
 			startcol = start_col
 		)
-		# sheet.write(rows + 2, start_col, 'Budget', self.formats['border_currency'])
-		# sheet.write(rows + 2, start_col + 1, BUDGET_PER_MONTH[month] + carry_over, self.formats['border_currency'])
-		# sheet.write(rows + 3, start_col, 'Over/Under', self.formats['border_currency'])
-		# sheet.write(rows + 3, start_col + 1, f'={xl_rowcol_to_cell(rows + 2, start_col + 1)}-{xl_rowcol_to_cell(rows + 1, start_col + 1)}', self.formats['border_currency'])
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.set_title({ 'name': 'By Category' })
 		chart.set_legend({ 'position': 'bottom' })
@@ -151,7 +147,8 @@ class Writer:
 			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
 			'data_labels': { 'value': True, 'percentage': True, 'position': 'best_fit' },
 		})
-		sheet.insert_chart(start_row + budget_info.shape[0], start_col, chart, {'y_scale': 2})
+		start_row += budget_info.shape[0]
+		sheet.insert_chart(start_row, start_col, chart, {'y_scale': 2})
 		start_col += cols + 1
 		data['Day'] = data['Date'].apply(lambda x: datetime.strptime(x, '%m/%d/%Y').strftime('%w%a'))
 		pivot = data.pivot_table(
