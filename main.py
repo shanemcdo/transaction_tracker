@@ -45,11 +45,11 @@ def stringify_date(day: int) -> str:
 	if day < 1:
 		return ''
 	match day % 10:
-		case 1:
+		case 1 if day != 11:
 			return f'{day}st'
-		case 2:
+		case 2 if day != 12:
 			return f'{day}nd'
-		case 3:
+		case 3 if day != 13:
 			return f'{day}rd'
 		case _:
 			return f'{day}th'
@@ -211,12 +211,19 @@ class Writer:
 			cal = pd.DataFrame(cal)
 			rows, cols = cal.shape
 			cols -= 1
-			sheet.add_table(0, start_col, rows, start_col + cols, {
+			bounds = 0, start_col, rows, start_col + cols
+			sheet.add_table(*bounds, {
 				'columns': [ { 'header': day, 'format': self.formats['currency'] } for day in (
 					'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
 					) ],
 				'data': cal.values.tolist(),
 				**self.get_style()
+			})
+			sheet.conditional_format(*bounds, {
+				'type': '3_color_scale',
+				'min_color': '#63be7b',
+				'mid_color': '#ffeb84',
+				'max_color': '#f8696b',
 			})
 			sheet.set_column(start_col, start_col + cols, 10)
 		sheet.autofit()
