@@ -135,9 +135,9 @@ class Writer:
 			self.excelWriter,
 			sheet_name,
 			index = False,
+			header = False,
 			startrow = start_row,
-			startcol = start_col,
-			header = False
+			startcol = start_col
 		)
 		# sheet.write(rows + 2, start_col, 'Budget', self.formats['border_currency'])
 		# sheet.write(rows + 2, start_col + 1, BUDGET_PER_MONTH[month] + carry_over, self.formats['border_currency'])
