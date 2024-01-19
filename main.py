@@ -101,6 +101,7 @@ class Writer:
 		self.data[month] = data.copy()
 		return data, carry_over
 
+	# TODO: clean this up in separate funcs
 	def write_month(self, month: int, data: pd.DataFrame, carry_over: float, sheet_name: str = None):
 		chart_series_kwargs = { 'data_labels': { 'category': True, 'value': True, 'percentage': True, 'position': 'best_fit' } }
 		chart_legend_kwargs = { 'position': 'none' }
