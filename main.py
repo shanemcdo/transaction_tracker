@@ -154,7 +154,7 @@ class Writer:
 			['New Budget', f'={xl_rowcol_to_cell(start_row, start_col + 1)}+{xl_rowcol_to_cell(start_row + 1, start_col + 1)}'],
 			['Remaining', f'={xl_rowcol_to_cell(start_row + 2, start_col + 1)}-{xl_rowcol_to_cell(start_row - 1, start_col + 1)}'],
 		])
-		sheet.add_table(start_row, start_col, start_row + budget_info.shape[0], start_col + budget_info.shape[1] - 1, {
+		sheet.add_table(start_row, start_col, start_row + budget_info.shape[0] - 1, start_col + budget_info.shape[1] - 1, {
 			'columns': [{}, { 'format': self.formats['currency'] }],
 			'header_row': False,
 			'data': budget_info.values.tolist(),
