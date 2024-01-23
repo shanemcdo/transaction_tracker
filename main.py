@@ -162,14 +162,14 @@ class Writer:
 		).reset_index()
 		rows, cols = pivot.shape
 		cols -= 1
+		table_name = sheet_name + 'CatPivot'
 		sheet.add_table(0, start_col, rows + 1, start_col + cols, {
 			**self.columns(
 				pivot,
 				column_total_kwargs,
 				column_currency_kwargs,
 			),
-			# 'header': 'Sum of Amount',
-			'name': sheet_name + 'CatPivot',
+			'name': table_name,
 			'total_row': True,
 			'data': pivot.values.tolist(),
 			**self.get_style()
@@ -193,8 +193,8 @@ class Writer:
 		chart.set_title({ 'name': 'By Category' })
 		chart.set_legend(chart_legend_kwargs)
 		chart.add_series({
-			'categories': [sheet_name, 1, start_col, rows, start_col],
-			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
+			'categories': f'={sheet_name}!{table_name}[Category]',
+			'values': f'={sheet_name}!{table_name}[Amount]',
 			**chart_series_kwargs
 		})
 		sheet.insert_chart(max(start_row, 11), start_col, chart, chart_insert_kwargs)
@@ -207,13 +207,14 @@ class Writer:
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		rows, cols = pivot.shape
 		cols -= 1
+		table_name = sheet_name + 'DayPivot'
 		sheet.add_table(0, start_col, rows + 1, start_col + cols, {
 			**self.columns(
 				pivot,
 				column_total_kwargs,
 				column_currency_kwargs,
 			),
-			'name': sheet_name + 'DayPivot',
+			'name': table_name,
 			'total_row': True,
 			'data': pivot.values.tolist(),
 			**self.get_style()
@@ -222,9 +223,8 @@ class Writer:
 		chart.set_title({ 'name': 'By Day' })
 		chart.set_legend(chart_legend_kwargs)
 		chart.add_series({
-			'Name': 'By Day',
-			'categories': [sheet_name, 1, start_col, rows, start_col],
-			'values': [sheet_name, 1, start_col + 1, rows, start_col + 1],
+			'categories': f'={sheet_name}!{table_name}[Day]',
+			'values': f'={sheet_name}!{table_name}[Amount]',
 			**chart_series_kwargs
 		})
 		sheet.insert_chart(max(start_row, 11), start_col + 4, chart, chart_insert_kwargs)
