@@ -37,7 +37,7 @@ EMPTY = pd.DataFrame({
 	'Amount': [],
 	'Note': [],
 })
-STARTING_STYLE_COUNT = 10
+STARTING_STYLE_COUNT = 9
 
 def parse_date(date: str) -> datetime:
 	return datetime.strptime(date, '%m/%d/%Y')
@@ -66,6 +66,7 @@ class Writer:
 			'currency': self.workbook.add_format(currency),
 			'border': self.workbook.add_format(border),
 			'border_currency': self.workbook.add_format({ **border, **currency }),
+			'percent': self.workbook.add_format({ 'num_format': '0.00%' }),
 		}
 		self.data = {}
 		self.reset_style_count()
@@ -92,6 +93,16 @@ class Writer:
 			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
 		return os.path.join(DEFAULT_INPUT_DIR, files[-1])
 
+	@staticmethod
+	def parse_note(note: str, sep: str = '|') -> float:
+		if sep in note:
+			try:
+				note, cashback = map(lambda x: x.strip('%\n\r\t '), note.split(sep, 1))
+				return note, float(cashback) / 100
+			except ValueError:
+				pass
+		return note, 0.0
+
 	def read_month(self, month: int) -> (pd.DataFrame, float):
 		filename = self.get_csv_filename_from_month(MONTHS_SHORT[month])
 		data = pd.read_csv(
@@ -102,8 +113,19 @@ class Writer:
 		).sort_values(by = 'Date')
 		carry_over = data.loc[data.Category == 'Carry Over', 'Amount'].sum()
 		data = data[data.Category != 'Carry Over']
+		tuple_col = data.Note.apply(self.parse_note)
+		data.Note = tuple_col.apply(lambda x: x[0])
+		data['CashBack %'] = tuple_col.apply(lambda x: x[1])
+		data['CashBack Reward'] = data.Amount * data['CashBack %']
 		self.data[month] = data.copy()
 		return data, carry_over
+
+	@staticmethod
+	def columns(df: pd.DataFrame, *column_kwargs_list: dict) -> dict[str, list[dict]]:
+		return { 'columns': [
+			{ 'header': column, **column_kwargs }
+			for column, column_kwargs in zip(df.columns, column_kwargs_list)
+		] }
 
 	# TODO: clean this up in separate funcs
 	def write_month(self, month: int, data: pd.DataFrame, carry_over: float, sheet_name: str = None):
@@ -112,19 +134,26 @@ class Writer:
 		chart_legend_kwargs = { 'position': 'none' }
 		chart_insert_kwargs = { 'y_scale': 2 }
 		pivot_kwargs = { 'values': 'Amount', 'aggfunc': 'sum' }
+		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
+		column_total_kwargs = { 'total_string': 'Total' }
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
 		rows, cols = data.shape
 		cols -= 1
-		sheet.add_table(0, 0, rows, cols, {
-			'columns': [
-				{ 'header': 'Date' },
-				{ 'header': 'Category' },
-				{ 'header': 'Amount', 'format': self.formats['currency'] },
-				{ 'header': 'Note' },
-			],
+		sheet.add_table(0, 0, rows + 1, cols, {
+			**self.columns(
+				data,
+				column_total_kwargs,
+				{},
+				column_currency_kwargs,
+				{},
+				{ 'format': self.formats['percent'] },
+				column_currency_kwargs
+			),
 			'name': sheet_name + 'Table',
+			'total_row': True,
 			'data': data.values.tolist(),
+			**self.get_style()
 		})
 		start_col = cols + 1
 		pivot = data.pivot_table(
@@ -134,14 +163,12 @@ class Writer:
 		rows, cols = pivot.shape
 		cols -= 1
 		sheet.add_table(0, start_col, rows + 1, start_col + cols, {
-			'columns': [
-				{ 'header': 'Category', 'total_string': 'Total' },
-				{
-					'header': 'Sum of Amount',
-					'format': self.formats['currency'],
-					'total_function': 'sum'
-				},
-			],
+			**self.columns(
+				pivot,
+				column_total_kwargs,
+				column_currency_kwargs,
+			),
+			# 'header': 'Sum of Amount',
 			'name': sheet_name + 'CatPivot',
 			'total_row': True,
 			'data': pivot.values.tolist(),
@@ -181,14 +208,11 @@ class Writer:
 		rows, cols = pivot.shape
 		cols -= 1
 		sheet.add_table(0, start_col, rows + 1, start_col + cols, {
-			'columns': [
-				{ 'header': 'Day', 'total_string': 'Total' },
-				{
-					'header': 'Sum of Amount',
-					'format': self.formats['currency'],
-					'total_function': 'sum'
-				},
-			],
+			**self.columns(
+				pivot,
+				column_total_kwargs,
+				column_currency_kwargs,
+			),
 			'name': sheet_name + 'DayPivot',
 			'total_row': True,
 			'data': pivot.values.tolist(),
