@@ -67,6 +67,7 @@ class Writer:
 			'border': self.workbook.add_format(border),
 			'border_currency': self.workbook.add_format({ **border, **currency }),
 			'percent': self.workbook.add_format({ 'num_format': '0.00%' }),
+			'date': self.workbook.add_format({ 'num_format': 'mm/dd/yyyy' }),
 		}
 		self.data = {}
 		self.reset_style_count()
@@ -113,6 +114,7 @@ class Writer:
 		).sort_values(by = 'Date')
 		carry_over = data.loc[data.Category == 'Carry Over', 'Amount'].sum()
 		data = data[data.Category != 'Carry Over']
+		data.Date = data.Date.apply(parse_date)
 		tuple_col = data.Note.apply(self.parse_note)
 		data.Note = tuple_col.apply(lambda x: x[0])
 		data['CashBack %'] = tuple_col.apply(lambda x: x[1])
@@ -136,6 +138,7 @@ class Writer:
 		pivot_kwargs = { 'values': 'Amount', 'aggfunc': 'sum' }
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
+		column_date_kwargs = { 'format': self.formats['date'] }
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
 		rows, cols = data.shape
@@ -143,7 +146,7 @@ class Writer:
 		sheet.add_table(0, 0, rows + 1, cols, {
 			**self.columns(
 				data,
-				column_total_kwargs,
+				{ **column_total_kwargs, **column_date_kwargs },
 				{},
 				column_currency_kwargs,
 				{},
@@ -199,7 +202,7 @@ class Writer:
 		})
 		sheet.insert_chart(max(start_row, 11), start_col, chart, chart_insert_kwargs)
 		start_col += cols + 1
-		data['Day'] = data['Date'].apply(lambda x: parse_date(x).strftime('%w%a'))
+		data['Day'] = data['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = data.pivot_table(
 			index = 'Day',
 			**pivot_kwargs
