@@ -75,9 +75,10 @@ class Writer:
 	def reset_style_count(self):
 		self.style_count = STARTING_STYLE_COUNT
 
-	def get_style(self) -> dict[str, str]:
-		result = { 'style': f'Table Style Medium {self.style_count}' }
-		self.style_count += 1
+	def get_style(self, override: int | None = None) -> dict[str, str]:
+		result = { 'style': f'Table Style medium {self.style_count if override is None else override}' }
+		if override is None:
+			self.style_count += 1
 		return result
 
 	@staticmethod
@@ -149,21 +150,28 @@ class Writer:
 		})
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_pie_chart(self, name: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str):
-		chart_series_kwargs = { 'data_labels': { 'category': True, 'value': True, 'percentage': True, 'position': 'best_fit' } }
-		chart_legend_kwargs = { 'position': 'none' }
-		chart_insert_kwargs = { 'y_scale': 2 }
+	def write_pie_chart(self, name: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0):
+		size = 480
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.set_title({ 'name': name })
-		chart.set_legend(chart_legend_kwargs)
+		chart.set_legend({ 'position': 'none' })
 		chart.add_series({
 			'categories': f'={table_name}[{categories_field}]',
 			'values': f'={table_name}[{values_field}]',
-			**chart_series_kwargs
+			'data_labels': { 'category': True, 'value': True, 'percentage': True, 'position': 'best_fit' }
 		})
-		sheet.insert_chart(max(start_row, 11), start_col, chart, chart_insert_kwargs)
+		chart.set_size({
+			'width': size,
+			'height': size,
+			'x_offset': j * size,
+			'y_offset': i * size,
+		})
+		sheet.insert_chart(start_row, start_col, chart)
 
-	def write_month_table(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int):
+	def write_month_table(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> (int, int):
+		'''
+		:return: (start_row, start_col) the new start row and col after the space taken up by the table
+		'''
 		cal = []
 		for row in calendar.monthcalendar(YEAR, month):
 			cal.append(map(stringify_date, row))
@@ -181,7 +189,7 @@ class Writer:
 				'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
 			) ],
 			'data': cal.values.tolist(),
-			**self.get_style()
+			**self.get_style(STARTING_STYLE_COUNT)
 		})
 		sheet.conditional_format(*bounds, {
 			'type': '3_color_scale',
@@ -190,30 +198,32 @@ class Writer:
 			'max_color': '#f8696b',
 		})
 		sheet.set_column(start_col, start_col + cols, 10)
+		return start_row + rows + 1, start_col + cols + 1
 
-	# TODO: clean this up in separate funcs
 	def write_month(self, month: int, data: pd.DataFrame, carry_over: float, sheet_name: str = None):
 		self.reset_style_count()
-		pivot_kwargs = { 'values': 'Amount', 'aggfunc': 'sum' }
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
 		column_date_kwargs = { 'format': self.formats['date'] }
+		column_percent_kwargs = { 'format': self.formats['percent'] }
+		pivot_kwargs = { 'values': [ 'Amount', 'CashBack Reward'], 'aggfunc': 'sum' }
+		pivot_columns_args = column_percent_kwargs, column_currency_kwargs, column_currency_kwargs
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
-		main_table_name = sheet_name + 'Table'
-		start_row, start_col = self.write_table(
+		start_row, start_col = 0, 0
+		_, start_col = self.write_table(
 			data,
-			main_table_name,
+			sheet_name + 'Table',
 			sheet,
-			0,
-			0,
+			start_row,
+			start_col,
 			self.columns(
 				data,
 				{ **column_total_kwargs, **column_date_kwargs },
 				{},
 				column_currency_kwargs,
 				{},
-				{ 'format': self.formats['percent'] },
+				column_percent_kwargs,
 				column_currency_kwargs
 			),
 			total=True
@@ -223,42 +233,13 @@ class Writer:
 			**pivot_kwargs
 		).reset_index()
 		cat_table_name = sheet_name + 'CatPivot'
-		start_row, _ = self.write_table(
+		start_row, max_col = self.write_table(
 			pivot,
 			cat_table_name,
 			sheet,
-			0,
-			start_col,
-			self.columns(
-				pivot,
-				column_total_kwargs,
-				column_currency_kwargs,
-			),
-			total = True
-		)
-		budget_info = pd.DataFrame([
-			['Budget', BUDGET_PER_MONTH[month]],
-			['Carry Over', carry_over],
-			['New Budget', BUDGET_PER_MONTH[month] + carry_over],
-			['Remaining', BUDGET_PER_MONTH[month] + carry_over - data.Amount.sum()],
-		])
-		start_row, start_col = self.write_table(
-			budget_info,
-			sheet_name + 'BudgetTable',
-			sheet,
 			start_row,
 			start_col,
-			[{}, { 'format': self.formats['currency'] }],
-			headers = False
-		)
-		self.write_pie_chart(
-			'By Category',
-			cat_table_name,
-			sheet,
-			max(start_row, 11),
-			start_col,
-			'Category',
-			'Amount'
+			self.columns(pivot, *pivot_columns_args),
 		)
 		data['Day'] = data['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = data.pivot_table(
@@ -267,36 +248,71 @@ class Writer:
 		).reset_index()
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		day_table_name = sheet_name + 'DayPivot'
-		start_row, start_col = self.write_table(
+		start_row, col = self.write_table(
 			pivot,
 			day_table_name,
 			sheet,
-			0,
+			start_row,
 			start_col,
-			self.columns(
-				pivot,
-				column_total_kwargs,
-				column_currency_kwargs,
-			),
-			total = True
+			self.columns(pivot, *pivot_columns_args),
 		)
-		self.write_pie_chart(
-			'By Day',
-			day_table_name,
+		max_col = max(max_col, col)
+		pivot = data.pivot_table(
+			index = 'CashBack %',
+			**pivot_kwargs
+		).reset_index()
+		cash_back_table_name = sheet_name + 'CashBackPivot'
+		start_row, col = self.write_table(
+			pivot,
+			cash_back_table_name,
 			sheet,
-			max(start_row, 11),
+			start_row,
 			start_col,
-			'Day',
-			'Amount'
+			self.columns(pivot, *pivot_columns_args),
 		)
+		max_col = max(max_col, col)
+		budget_info = pd.DataFrame([
+			['Budget', BUDGET_PER_MONTH[month]],
+			['Carry Over', carry_over],
+			['New Budget', BUDGET_PER_MONTH[month] + carry_over],
+			['Remaining', BUDGET_PER_MONTH[month] + carry_over - data.Amount.sum()],
+		])
+		start_row, col = self.write_table(
+			budget_info,
+			sheet_name + 'BudgetTable',
+			sheet,
+			start_row,
+			start_col,
+			[{}, { 'format': self.formats['currency'] }],
+			headers = False
+		)
+		start_col = max_col = max(max_col, col)
+		start_row = 0
 		if 1 <= month <= 12:
-			self.write_month_table(
+			start_row, _ = self.write_month_table(
 				data,
 				sheet,
 				month,
-				0,
+				start_row,
 				start_col,
 			)
+		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
+			for j, (category_field, table_name) in enumerate((
+				('Category', cat_table_name),
+				('Day', day_table_name),
+				('CashBack %', cash_back_table_name)
+			)):
+				self.write_pie_chart(
+					f'{value_field} By {category_field}',
+					table_name,
+					sheet,
+					start_row,
+					start_col,
+					category_field,
+					value_field,
+					i,
+					j
+				)
 		sheet.autofit()
 
 	def handle_month(self, month: int):
