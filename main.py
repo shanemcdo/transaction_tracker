@@ -56,6 +56,12 @@ def stringify_date(day: int) -> str:
 			return f'{day}th'
 
 class Writer:
+	conditonal_format_options = {
+			'type': '3_color_scale',
+			'min_color': '#63be7b',
+			'mid_color': '#ffeb84',
+			'max_color': '#f8696b',
+		}
 
 	def __init__(self, filename: str):
 		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter')
@@ -68,6 +74,13 @@ class Writer:
 			'border_currency': self.workbook.add_format({ **border, **currency }),
 			'percent': self.workbook.add_format({ 'num_format': '0.00%' }),
 			'date': self.workbook.add_format({ 'num_format': 'mm/dd/yyyy' }),
+			'merged': self.workbook.add_format({
+				'bold': True,
+				'align': 'center',
+				'bg_color': 'blue',
+				'fg_color': 'white',
+				'font_size': 15
+			}),
 		}
 		self.data = {}
 		self.reset_style_count()
@@ -168,7 +181,7 @@ class Writer:
 		})
 		sheet.insert_chart(start_row, start_col, chart)
 
-	def write_month_table(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> (int, int):
+	def write_month_table(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False) -> (int, int):
 		'''
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
@@ -183,6 +196,9 @@ class Writer:
 		cal = pd.DataFrame(cal)
 		rows, cols = cal.shape
 		cols -= 1
+		if header:
+			sheet.merge_range(start_row, start_col, start_row, start_col + cols, MONTHS[month], self.formats['merged'])
+			start_row += 1
 		bounds = start_row, start_col, start_row + rows, start_col + cols
 		sheet.add_table(*bounds, {
 			'columns': [ { 'header': day, 'format': self.formats['currency'] } for day in (
@@ -191,12 +207,8 @@ class Writer:
 			'data': cal.values.tolist(),
 			**self.get_style(STARTING_STYLE_COUNT)
 		})
-		sheet.conditional_format(*bounds, {
-			'type': '3_color_scale',
-			'min_color': '#63be7b',
-			'mid_color': '#ffeb84',
-			'max_color': '#f8696b',
-		})
+		if not header:
+			sheet.conditional_format(*bounds, self.conditonal_format_options)
 		sheet.set_column(start_col, start_col + cols, 10)
 		return start_row + rows + 1, start_col + cols + 1
 
@@ -296,6 +308,21 @@ class Writer:
 				start_row,
 				start_col,
 			)
+		else:
+			before = start_row, start_col
+			col = start_col
+			for month in range(1, 13):
+				start_row, start_col = self.write_month_table(
+					data,
+					sheet,
+					month,
+					start_row,
+					col,
+					header = True,
+				)
+			sheet.conditional_format(*before, start_row, start_col, self.conditonal_format_options)
+			print(*before, start_row, start_col, self.conditonal_format_options)
+			start_col = col
 		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
 			for j, (category_field, table_name) in enumerate((
 				('Category', cat_table_name),
