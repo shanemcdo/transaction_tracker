@@ -56,12 +56,6 @@ def stringify_date(day: int) -> str:
 			return f'{day}th'
 
 class Writer:
-	conditonal_format_options = {
-			'type': '3_color_scale',
-			'min_color': '#63be7b',
-			'mid_color': '#ffeb84',
-			'max_color': '#f8696b',
-		}
 
 	def __init__(self, filename: str):
 		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter')
@@ -77,9 +71,11 @@ class Writer:
 			'merged': self.workbook.add_format({
 				'bold': True,
 				'align': 'center',
-				'bg_color': 'blue',
-				'fg_color': 'white',
-				'font_size': 15
+				'bg_color': '#4e81bd',
+				'font_color': 'white',
+				'font_size': 15,
+				'border_color': 'white',
+				'border': 1
 			}),
 		}
 		self.data = {}
@@ -181,7 +177,39 @@ class Writer:
 		})
 		sheet.insert_chart(start_row, start_col, chart)
 
-	def write_month_table(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False) -> (int, int):
+	def write_month_table(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> (int, int):
+		'''
+		:return: (start_row, start_col) the new start row and col after the space taken up by the table
+		'''
+		before = start_row, start_col
+		if 1 <= month <= 12:
+			start_row, start_col = self.write_month_table_helper(
+				data,
+				sheet,
+				month,
+				start_row,
+				start_col,
+			)
+		else:
+			col = start_col
+			for month in range(1, 13):
+				start_row, start_col = self.write_month_table_helper(
+					data,
+					sheet,
+					month,
+					start_row,
+					col,
+					header = True
+				)
+		sheet.conditional_format(*before, start_row, start_col -1, {
+			'type': '3_color_scale',
+			'min_color': '#63be7b',
+			'mid_color': '#ffeb84',
+			'max_color': '#f8696b',
+		})
+		return start_row, start_col
+
+	def write_month_table_helper(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False) -> (int, int):
 		'''
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
@@ -207,8 +235,6 @@ class Writer:
 			'data': cal.values.tolist(),
 			**self.get_style(STARTING_STYLE_COUNT)
 		})
-		if not header:
-			sheet.conditional_format(*bounds, self.conditonal_format_options)
 		sheet.set_column(start_col, start_col + cols, 10)
 		return start_row + rows + 1, start_col + cols + 1
 
@@ -300,29 +326,13 @@ class Writer:
 		)
 		start_col = max_col = max(max_col, col)
 		start_row = 0
-		if 1 <= month <= 12:
-			start_row, _ = self.write_month_table(
-				data,
-				sheet,
-				month,
-				start_row,
-				start_col,
-			)
-		else:
-			before = start_row, start_col
-			col = start_col
-			for month in range(1, 13):
-				start_row, start_col = self.write_month_table(
-					data,
-					sheet,
-					month,
-					start_row,
-					col,
-					header = True,
-				)
-			sheet.conditional_format(*before, start_row, start_col, self.conditonal_format_options)
-			print(*before, start_row, start_col, self.conditonal_format_options)
-			start_col = col
+		start_row, _ = self.write_month_table(
+			data,
+			sheet,
+			month,
+			start_row,
+			start_col,
+		)
 		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
 			for j, (category_field, table_name) in enumerate((
 				('Category', cat_table_name),
