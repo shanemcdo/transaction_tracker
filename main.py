@@ -104,7 +104,13 @@ class Writer:
 		return os.path.join(DEFAULT_INPUT_DIR, files[-1])
 
 	@staticmethod
-	def parse_note(note: str, sep: str = '|') -> float:
+	def parse_note(note: str, sep: str = '|') -> (str, float):
+		'''
+		Split note on seperator string and return parsed note and cashback
+		:note: original note containing note message and cashback %
+		:sep: the string to split the note on
+		:return: note message and cashback percent in a tuple
+		'''
 		if sep in note:
 			try:
 				note, cashback = map(lambda x: x.strip('%\n\r\t '), note.split(sep, 1))
@@ -114,6 +120,11 @@ class Writer:
 		return note, 0.0
 
 	def read_month(self, month: int) -> (pd.DataFrame, float):
+		'''
+		parse csv and modify data for given month
+		:month: int 1-12, its the month to read in
+		:return: a tuple of the csv data and the carry_over from the previous month
+		'''
 		filename = self.get_csv_filename_from_month(MONTHS_SHORT[month])
 		data = pd.read_csv(
 			filename,
@@ -133,6 +144,11 @@ class Writer:
 
 	@staticmethod
 	def columns(df: pd.DataFrame, *column_kwargs_list: dict) -> list[dict]:
+		'''
+		:df: data where column names are taken from
+		:column_kwargs_list: additional kwargs for each respective column
+		:return: a list of inputted kwargs combined with column names
+		'''
 		return [
 			{ 'header': column, **column_kwargs }
 			for column, column_kwargs in zip(df.columns, column_kwargs_list)
@@ -140,6 +156,16 @@ class Writer:
 
 	def write_table(self, data: pd.DataFrame, table_name: str, sheet, start_row: int, start_col: int, columns: list[dict], total: bool = False, headers: bool = True) -> (int ,int):
 		'''
+		write pandas data to an excel table
+		:data: data to write to excel table
+		:table_name: name of the table in excel
+		:sheet: sheet to write to
+		:start_row: row in sheet to start writing table
+		:start_col: column in sheet to start writing table
+		:columns: column config data that contains info about columns
+			https://xlsxwriter.readthedocs.io/working_with_tables.html#columns
+		:total: whether or not to include the total row
+		:headers: whether or not to include the header row
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
 		rows, cols = data.shape
@@ -159,7 +185,25 @@ class Writer:
 		return start_row + rows + 1, start_col + cols + 1
 
 	def write_pie_chart(self, name: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0):
-		size = 480
+		'''
+		write pandas data to an excel pie chart
+		:name: title for the pie chart
+		:table_name: name of the table in excel to get the data from
+		:sheet: sheet to write to
+		:start_row: row in sheet to start writing pie chart
+		:start_col: column in sheet to start writing pie chart
+		:categories_field: the name of the field in the table where the categories come from
+		:values_field: the name of the field in the table where the values come from
+		:i: the y coordinate that offsets the chart
+		:j: the x coordinate that offsets the chart
+			the i and j values are used to create multiple charts right next to each other
+			i.e.
+				self.write_pie_chart(..., i = 0, j = 0)
+				self.write_pie_chart(..., i = 1, j = 0)
+				self.write_pie_chart(..., i = 0, j = 1)
+				self.write_pie_chart(..., i = 1, j = 1)
+			this will create 4 charts all right next to eachother in a square
+		'''
 		chart = self.workbook.add_chart({ 'type': 'pie' })
 		chart.set_title({ 'name': name })
 		chart.set_legend({ 'position': 'none' })
@@ -168,6 +212,7 @@ class Writer:
 			'values': f'={table_name}[{values_field}]',
 			'data_labels': { 'category': True, 'value': True, 'percentage': True, 'position': 'best_fit' }
 		})
+		size = 480
 		chart.set_size({
 			'width': size,
 			'height': size,
@@ -178,6 +223,13 @@ class Writer:
 
 	def write_month_table(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> (int, int):
 		'''
+		writes a table that shows the sum of all transactions on each day of the month
+		uses conditional formatting
+		:data: the pandas dataframe containing the transaction data for the given month
+		:sheet: sheet to write to
+		:month: int 1-13, 1-12 represent the months of the year 13 represents all of the months
+		:start_row: row in sheet to start writing table
+		:start_col: column in sheet to start writing table
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
 		before = start_row, start_col
@@ -210,6 +262,14 @@ class Writer:
 
 	def write_month_table_helper(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False) -> (int, int):
 		'''
+		a helper function that
+		writes a table that shows the sum of all transactions on each day of the month
+		:data: the pandas dataframe containing the transaction data for the given month
+		:sheet: sheet to write to
+		:month: int 1-12 represent the months of the year
+		:start_row: row in sheet to start writing table
+		:start_col: column in sheet to start writing table
+		:header: whether or not to include the month name header
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
 		cal = []
@@ -238,6 +298,13 @@ class Writer:
 		return start_row + rows + 1, start_col + cols + 1
 
 	def write_month(self, month: int, data: pd.DataFrame, carry_over: float, sheet_name: str = None):
+		'''
+		Create and write the sheet for a given month
+		:month: int 1-13, 1-12 for the months of the year and 13 for all of them
+		:data: the dataframe contianing the transactions for the month
+		:carry_over: the money leftover from last month (negative means overspent)
+		:sheet_name: optional, name to give the sheet created, if left None will be the month name
+		'''
 		self.reset_style_count()
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
@@ -351,6 +418,10 @@ class Writer:
 				)
 
 	def handle_month(self, month: int):
+		'''
+		read and write data for the month
+		:month: int, 1-12 number representing the months
+		'''
 		try:
 			data, carry_over = self.read_month(month)
 			if not data.empty:
@@ -359,6 +430,9 @@ class Writer:
 			pass
 
 	def write_summary(self):
+		'''
+		write a sheet for a summary of the whole year
+		'''
 		self.write_month(
 			13,
 			pd.concat(self.data.values()) if len(self.data) > 0 else EMPTY.copy(),
