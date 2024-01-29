@@ -2,7 +2,6 @@
 
 import os
 import xlsxwriter
-from xlsxwriter.utility import xl_rowcol_to_cell
 from datetime import datetime
 import calendar
 import pandas as pd
@@ -324,7 +323,6 @@ class Writer:
 			[{}, { 'format': self.formats['currency'] }],
 			headers = False
 		)
-		sheet.autofit()
 		start_col = max_col = max(max_col, col)
 		start_row = 0
 		start_row, _ = self.write_month_table(
