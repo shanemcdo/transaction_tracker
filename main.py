@@ -20,6 +20,7 @@ MONTHS = {
 	10: 'October',
 	11: 'November',
 	12: 'December',
+	13: 'Whole Year'
 }
 MONTHS_SHORT = { key: value[:3] for key, value in MONTHS.items() }
 DEFAULT_INPUT_DIR = './in/'
