@@ -390,6 +390,7 @@ class Writer:
 			[{}, { 'format': self.formats['currency'] }],
 			headers = False
 		)
+		sheet.autofit()
 		start_col = max_col = max(max_col, col)
 		start_row = 0
 		start_row, _ = self.write_month_table(
