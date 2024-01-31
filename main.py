@@ -36,6 +36,8 @@ EMPTY = pd.DataFrame({
 	'Category': [],
 	'Amount': [],
 	'Note': [],
+	'CashBack %': [],
+	'CashBack Reward': [],
 })
 STARTING_STYLE_COUNT = 9
 
@@ -169,6 +171,10 @@ class Writer:
 		:headers: whether or not to include the header row
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
+		if data.shape[0] < 1:
+			data = data.copy()
+			data.loc[-1] = ''
+			total = False
 		rows, cols = data.shape
 		if total and headers:
 			rows += 1
