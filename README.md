@@ -30,7 +30,7 @@ writes files in the `./out` folder.
 
 ### File Name
 
-The output created is of the name `transactions YYYYmmddHHMMSS.xlsx`.
+The output created is of the name `transactions YYYYmmdd HHMMSS.xlsx`.
 
 ### File format
 
