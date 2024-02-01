@@ -1,0 +1,5 @@
+#!/bin/sh
+
+source venv/bin/activate && \
+	./main.py && \
+	ls -t out/* | head -n1 | xargs -I {} open "{}"
