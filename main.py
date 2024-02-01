@@ -453,8 +453,9 @@ class Writer:
 
 def main():
 	'''Driver Code'''
+	datestring = datetime.now().strftime('%Y%m%d%H%M%S')
 	calendar.setfirstweekday(calendar.SUNDAY)
-	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {YEAR}.xlsx'))
+	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {datestring}.xlsx'))
 	for month in MONTHS.keys():
 		writer.handle_month(month)
 	writer.write_summary()
