@@ -391,6 +391,14 @@ class Writer:
 			index = 'Day Number',
 			**pivot_kwargs
 		).reset_index()
+		for i in range(1, 32):
+			if any(pivot['Day Number'] == i):
+				continue
+			pivot = pd.concat(
+				[pivot, pd.DataFrame([[i, 0, 0]], columns = pivot.columns)],
+				ignore_index = True
+			)
+		pivot = pivot.sort_values(by='Day Number')
 		day_number_table_name = sheet_name + 'DayNumberPivot'
 		start_row, col = self.write_table(
 			pivot,
