@@ -387,7 +387,6 @@ class Writer:
 		max_col = max(max_col, col)
 		data_copy = data.copy()
 		data_copy['Day Number'] = data.Date.apply(lambda x: int(x.strftime('%-d')))
-		print(data_copy)
 		pivot = data_copy.pivot_table(
 			index = 'Day Number',
 			**pivot_kwargs
