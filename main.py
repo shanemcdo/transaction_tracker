@@ -251,6 +251,8 @@ class Writer:
 		else:
 			col = start_col
 			for month in range(1, 13):
+				if month not in self.data:
+					continue
 				start_row, start_col = self.write_month_table_helper(
 					data,
 					sheet,
