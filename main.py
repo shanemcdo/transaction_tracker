@@ -191,10 +191,11 @@ class Writer:
 		})
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_pie_chart(self, name: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0):
+	def write_pie_chart(self, name: str, chart_type: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0):
 		'''
 		write pandas data to an excel pie chart
 		:name: title for the pie chart
+		:chart_type: the kind of chart to use e.g. pie or column
 		:table_name: name of the table in excel to get the data from
 		:sheet: sheet to write to
 		:start_row: row in sheet to start writing pie chart
@@ -211,7 +212,7 @@ class Writer:
 				self.write_pie_chart(..., i = 1, j = 1)
 			this will create 4 charts all right next to eachother in a square
 		'''
-		chart = self.workbook.add_chart({ 'type': 'pie' })
+		chart = self.workbook.add_chart({ 'type': chart_type })
 		chart.set_title({ 'name': name })
 		chart.set_legend({ 'position': 'none' })
 		chart.add_series({
@@ -320,7 +321,7 @@ class Writer:
 		column_date_kwargs = { 'format': self.formats['date'] }
 		column_percent_kwargs = { 'format': self.formats['percent'] }
 		pivot_kwargs = { 'values': [ 'Amount', 'CashBack Reward'], 'aggfunc': 'sum' }
-		pivot_columns_args = column_percent_kwargs, column_currency_kwargs, column_currency_kwargs
+		pivot_columns_args = column_currency_kwargs, column_currency_kwargs
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
 		start_row, start_col = 0, 0
@@ -352,7 +353,7 @@ class Writer:
 			sheet,
 			start_row,
 			start_col,
-			self.columns(pivot, *pivot_columns_args),
+			self.columns(pivot, {}, *pivot_columns_args),
 		)
 		data['Day'] = data['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = data.pivot_table(
@@ -367,7 +368,7 @@ class Writer:
 			sheet,
 			start_row,
 			start_col,
-			self.columns(pivot, *pivot_columns_args),
+			self.columns(pivot, {}, *pivot_columns_args),
 		)
 		max_col = max(max_col, col)
 		pivot = data.pivot_table(
@@ -381,7 +382,24 @@ class Writer:
 			sheet,
 			start_row,
 			start_col,
-			self.columns(pivot, *pivot_columns_args),
+			self.columns(pivot, column_percent_kwargs, *pivot_columns_args),
+		)
+		max_col = max(max_col, col)
+		data_copy = data.copy()
+		data_copy['Day Number'] = data.Date.apply(lambda x: int(x.strftime('%-d')))
+		print(data_copy)
+		pivot = data_copy.pivot_table(
+			index = 'Day Number',
+			**pivot_kwargs
+		).reset_index()
+		day_number_table_name = sheet_name + 'DayNumberPivot'
+		start_row, col = self.write_table(
+			pivot,
+			day_number_table_name,
+			sheet,
+			start_row,
+			start_col,
+			self.columns(pivot, {}, *pivot_columns_args),
 		)
 		max_col = max(max_col, col)
 		budget_info = pd.DataFrame([
@@ -399,8 +417,8 @@ class Writer:
 			[{}, { 'format': self.formats['currency'] }],
 			headers = False
 		)
-		sheet.autofit()
 		start_col = max_col = max(max_col, col)
+		sheet.autofit()
 		start_row = 0
 		_, start_col = self.write_month_table(
 			data,
@@ -410,13 +428,15 @@ class Writer:
 			start_col,
 		)
 		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
-			for j, (category_field, table_name) in enumerate((
-				('Category', cat_table_name),
-				('Day', day_table_name),
-				('CashBack %', cash_back_table_name)
+			for j, (category_field, table_name, chart_type) in enumerate((
+				('Category', cat_table_name, 'pie'),
+				('Day', day_table_name, 'pie'),
+				('CashBack %', cash_back_table_name, 'pie'),
+				('Day Number', day_number_table_name, 'column')
 			)):
 				self.write_pie_chart(
 					f'{value_field} By {category_field}',
+					chart_type,
 					table_name,
 					sheet,
 					start_row,
