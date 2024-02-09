@@ -474,12 +474,12 @@ class Writer:
 			'Summary'
 		)
 
-	def focus(self, sheet_name: str):
+	def focus(self, month: int):
 		'''
 		Focus on a specific sheet when the workbook opens
-		:sheet_name: the sheet to focus on
+		:month: the sheet to focus on
 		'''
-		sheet = self.workbook.get_worksheet_by_name(sheet_name)
+		sheet = self.workbook.get_worksheet_by_name(MONTHS[month])
 		if sheet:
 			sheet.activate()
 
@@ -496,8 +496,7 @@ def main():
 	for month in MONTHS.keys():
 		writer.handle_month(month)
 	writer.write_summary()
-	print(current_month)
-	writer.focus(current_month)
+	writer.focus(now.month)
 	writer.save()
 
 if __name__ == '__main__':
