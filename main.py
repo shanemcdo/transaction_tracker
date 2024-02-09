@@ -9,7 +9,7 @@ from glob import glob
 
 MONTHS = {
 	1: 'January',
-	2: 'Febuary',
+	2: 'February',
 	3: 'March',
 	4: 'April',
 	5: 'May',
@@ -474,17 +474,30 @@ class Writer:
 			'Summary'
 		)
 
+	def focus(self, sheet_name: str):
+		'''
+		Focus on a specific sheet when the workbook opens
+		:sheet_name: the sheet to focus on
+		'''
+		sheet = self.workbook.get_worksheet_by_name(sheet_name)
+		if sheet:
+			sheet.activate()
+
 	def save(self):
 		self.workbook.close()
 
 def main():
 	'''Driver Code'''
-	datestring = datetime.now().strftime('%Y%m%d %H%M%S')
+	now = datetime.now()
+	datestring = now.strftime('%Y%m%d %H%M%S')
+	current_month = now.strftime('%B')
 	calendar.setfirstweekday(calendar.SUNDAY)
 	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {datestring}.xlsx'))
 	for month in MONTHS.keys():
 		writer.handle_month(month)
 	writer.write_summary()
+	print(current_month)
+	writer.focus(current_month)
 	writer.save()
 
 if __name__ == '__main__':
