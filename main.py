@@ -483,6 +483,11 @@ class Writer:
 		if sheet:
 			sheet.activate()
 
+	def full_screen(self): 
+		'''Make the window full screen'''
+		# just make it big enough to fill any screen
+		self.workbook.set_size(1000000, 1000000)
+
 	def save(self):
 		self.workbook.close()
 
@@ -497,6 +502,7 @@ def main():
 		writer.handle_month(month)
 	writer.write_summary()
 	writer.focus(now.month)
+	writer.full_screen()
 	writer.save()
 
 if __name__ == '__main__':
