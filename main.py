@@ -191,7 +191,7 @@ class Writer:
 		})
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_pie_chart(self, name: str, chart_type: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0):
+	def write_pie_chart(self, name: str, chart_type: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True):
 		'''
 		write pandas data to an excel pie chart
 		:name: title for the pie chart
@@ -218,9 +218,14 @@ class Writer:
 		chart.add_series({
 			'categories': f'={table_name}[{categories_field}]',
 			'values': f'={table_name}[{values_field}]',
-			'data_labels': { 'category': True, 'value': True, 'percentage': True, 'position': 'best_fit' }
+			'data_labels': {
+				'category': chart_type == 'pie',
+				'value': show_value,
+				'percentage': True,
+				'position': 'best_fit' if chart_type == 'pie' else 'outside_end'
+			}
 		})
-		size = 480
+		size = 520
 		chart.set_size({
 			'width': size,
 			'height': size,
@@ -436,11 +441,11 @@ class Writer:
 			start_col,
 		)
 		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
-			for j, (category_field, table_name, chart_type) in enumerate((
-				('Category', cat_table_name, 'pie'),
-				('Day', day_table_name, 'pie'),
-				('CashBack %', cash_back_table_name, 'pie'),
-				('Day Number', day_number_table_name, 'column')
+			for j, (category_field, table_name, chart_type, show_value) in enumerate((
+				('Category', cat_table_name, 'pie', True),
+				('Day', day_table_name, 'column', True),
+				('CashBack %', cash_back_table_name, 'pie', True),
+				('Day Number', day_number_table_name, 'column', False)
 			)):
 				self.write_pie_chart(
 					f'{value_field} By {category_field}',
@@ -452,7 +457,8 @@ class Writer:
 					category_field,
 					value_field,
 					i,
-					j
+					j,
+					show_value
 				)
 
 	def handle_month(self, month: int):
