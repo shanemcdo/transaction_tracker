@@ -360,6 +360,10 @@ class Writer:
 			index = 'Day',
 			**pivot_kwargs
 		).reset_index()
+		for day in [ '0Sun', '1Mon', '2Tue', '3Wed', '4Thu', '5Fri', '6Sat']:
+			if day not in pivot['Day'].values:
+				pivot = pd.concat([pivot, pd.DataFrame([[day, 0, 0]], columns=pivot.columns)])
+		pivot = pivot.sort_values('Day')
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		day_table_name = sheet_name + 'DayPivot'
 		start_row, col = self.write_table(
