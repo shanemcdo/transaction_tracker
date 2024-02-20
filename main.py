@@ -410,6 +410,7 @@ class Writer:
 			['New Budget', BUDGET_PER_MONTH[month] + carry_over],
 			['Remaining', BUDGET_PER_MONTH[month] + carry_over - data.Amount.sum()],
 		])
+		self.go_to_next()
 		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
@@ -474,12 +475,14 @@ class Writer:
 			sheet,
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
+		self.go_to_next()
 		sheet.autofit()
 		self.write_month_table(
 			data,
 			sheet,
 			month
 		)
+		self.go_to_next()
 		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
 				('Category', cat_table_name, 'pie', True),
@@ -533,7 +536,7 @@ class Writer:
 		if sheet:
 			sheet.activate()
 
-	def full_screen(self): 
+	def full_screen(self):
 		'''Make the window full screen'''
 		# just make it big enough to fill any screen
 		self.workbook.set_size(1000000, 1000000)
