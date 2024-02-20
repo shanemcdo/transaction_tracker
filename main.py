@@ -83,6 +83,22 @@ class Writer:
 		self.data = {}
 		self.reset_style_count()
 
+	def reset_position(self):
+		'''
+		reset all position back to 0, 0
+		'''
+		self.row = 0
+		self.column = 0
+		self.next_row = 0 # always zero
+		self.next_column = 0
+
+	def go_to_next(self):
+		'''
+		go to top of next available column
+		'''
+		self.column = self.next_column
+		self.row = self.next_row
+
 	def reset_style_count(self):
 		self.style_count = STARTING_STYLE_COUNT
 
@@ -157,7 +173,31 @@ class Writer:
 			for column, column_kwargs in zip(df.columns, column_kwargs_list)
 		]
 
-	def write_table(self, data: pd.DataFrame, table_name: str, sheet, start_row: int, start_col: int, columns: list[dict], total: bool = False, headers: bool = True) -> (int ,int):
+	def write_table(self, data: pd.DataFrame, table_name: str, sheet, columns: list[dict], total: bool = False, headers: bool = True):
+		'''
+		write pandas data to an excel table at the location saved in the class
+		:data: data to write to excel table
+		:table_name: name of the table in excel
+		:sheet: sheet to write to
+		:columns: column config data that contains info about columns
+			https://xlsxwriter.readthedocs.io/working_with_tables.html#columns
+		:total: whether or not to include the total row
+		:headers: whether or not to include the header row
+		'''
+		self.row, col = self.write_table_at(
+			data,
+			table_name,
+			sheet,
+			self.row,
+			self.column,
+			columns,
+			total,
+			headers
+		)
+		if col > self.next_column:
+			self.next_column = col
+
+	def write_table_at(self, data: pd.DataFrame, table_name: str, sheet, start_row: int, start_col: int, columns: list[dict], total: bool = False, headers: bool = True) -> (int ,int):
 		'''
 		write pandas data to an excel table
 		:data: data to write to excel table
@@ -234,7 +274,26 @@ class Writer:
 		})
 		sheet.insert_chart(start_row, start_col, chart)
 
-	def write_month_table(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> (int, int):
+	def write_month_table(self, data: pd.DataFrame, sheet, month: int):
+		'''
+		writes a table that shows the sum of all transactions on each day of the month
+		uses conditional formatting
+		:data: the pandas dataframe containing the transaction data for the given month
+		:sheet: sheet to write to
+		:month: int 1-13, 1-12 represent the months of the year 13 represents all of the months
+		:return: (start_row, start_col) the new start row and col after the space taken up by the table
+		'''
+		self.row, col = self.write_month_table_at(
+			data,
+			sheet,
+			month,
+			self.row,
+			self.column
+		)
+		if col > self.next_column:
+			self.next_column = col
+
+	def write_month_table_at(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> (int, int):
 		'''
 		writes a table that shows the sum of all transactions on each day of the month
 		uses conditional formatting
@@ -321,6 +380,7 @@ class Writer:
 		:sheet_name: optional, name to give the sheet created, if left None will be the month name
 		'''
 		self.reset_style_count()
+		self.reset_position()
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
 		column_date_kwargs = { 'format': self.formats['date'] }
@@ -329,13 +389,10 @@ class Writer:
 		pivot_columns_args = column_currency_kwargs, column_currency_kwargs
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
-		start_row, start_col = 0, 0
-		_, start_col = self.write_table(
+		self.write_table(
 			data,
 			sheet_name + 'Table',
 			sheet,
-			start_row,
-			start_col,
 			self.columns(
 				data,
 				{ **column_total_kwargs, **column_date_kwargs },
@@ -353,12 +410,10 @@ class Writer:
 			['New Budget', BUDGET_PER_MONTH[month] + carry_over],
 			['Remaining', BUDGET_PER_MONTH[month] + carry_over - data.Amount.sum()],
 		])
-		start_row, max_col = self.write_table(
+		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
 			sheet,
-			start_row,
-			start_col,
 			[{}, { 'format': self.formats['currency'] }],
 			headers = False
 		)
@@ -367,15 +422,12 @@ class Writer:
 			**pivot_kwargs
 		).reset_index()
 		cat_table_name = sheet_name + 'CatPivot'
-		start_row, col = self.write_table(
+		self.write_table(
 			pivot,
 			cat_table_name,
 			sheet,
-			start_row,
-			start_col,
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
-		max_col = max(max_col, col)
 		data['Day'] = data['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = data.pivot_table(
 			index = 'Day',
@@ -387,29 +439,23 @@ class Writer:
 		pivot = pivot.sort_values('Day')
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		day_table_name = sheet_name + 'DayPivot'
-		start_row, col = self.write_table(
+		self.write_table(
 			pivot,
 			day_table_name,
 			sheet,
-			start_row,
-			start_col,
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
-		max_col = max(max_col, col)
 		pivot = data.pivot_table(
 			index = 'CashBack %',
 			**pivot_kwargs
 		).reset_index()
 		cash_back_table_name = sheet_name + 'CashBackPivot'
-		start_row, col = self.write_table(
+		self.write_table(
 			pivot,
 			cash_back_table_name,
 			sheet,
-			start_row,
-			start_col,
 			self.columns(pivot, column_percent_kwargs, *pivot_columns_args),
 		)
-		max_col = max(max_col, col)
 		data_copy = data.copy()
 		data_copy['Day Number'] = data.Date.apply(lambda x: int(x.strftime('%-d')))
 		pivot = data_copy.pivot_table(
@@ -422,24 +468,17 @@ class Writer:
 			pivot = pd.concat([pivot, pd.DataFrame([[i, 0, 0]], columns = pivot.columns)])
 		pivot = pivot.sort_values(by='Day Number')
 		day_number_table_name = sheet_name + 'DayNumberPivot'
-		start_row, col = self.write_table(
+		self.write_table(
 			pivot,
 			day_number_table_name,
 			sheet,
-			start_row,
-			start_col,
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
-		max_col = max(max_col, col)
-		start_col = max_col
 		sheet.autofit()
-		start_row = 0
-		_, start_col = self.write_month_table(
+		self.write_month_table(
 			data,
 			sheet,
-			month,
-			start_row,
-			start_col,
+			month
 		)
 		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
@@ -453,8 +492,8 @@ class Writer:
 					chart_type,
 					table_name,
 					sheet,
-					start_row,
-					start_col,
+					self.row,
+					self.column,
 					category_field,
 					value_field,
 					i,
