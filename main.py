@@ -231,7 +231,7 @@ class Writer:
 		})
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_pie_chart(self, name: str, chart_type: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True):
+	def write_pie_chart_at(self, name: str, chart_type: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True):
 		'''
 		write pandas data to an excel pie chart
 		:name: title for the pie chart
@@ -246,10 +246,10 @@ class Writer:
 		:j: the x coordinate that offsets the chart
 			the i and j values are used to create multiple charts right next to each other
 			i.e.
-				self.write_pie_chart(..., i = 0, j = 0)
-				self.write_pie_chart(..., i = 1, j = 0)
-				self.write_pie_chart(..., i = 0, j = 1)
-				self.write_pie_chart(..., i = 1, j = 1)
+				self.write_pie_chart_at(..., i = 0, j = 0)
+				self.write_pie_chart_at(..., i = 1, j = 0)
+				self.write_pie_chart_at(..., i = 0, j = 1)
+				self.write_pie_chart_at(..., i = 1, j = 1)
 			this will create 4 charts all right next to eachother in a square
 		'''
 		chart = self.workbook.add_chart({ 'type': chart_type })
@@ -490,7 +490,7 @@ class Writer:
 				('CashBack %', cash_back_table_name, 'pie', True),
 				('Day Number', day_number_table_name, 'column', False)
 			)):
-				self.write_pie_chart(
+				self.write_pie_chart_at(
 					f'{value_field} By {category_field}',
 					chart_type,
 					table_name,
