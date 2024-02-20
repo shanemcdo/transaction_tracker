@@ -347,12 +347,27 @@ class Writer:
 			),
 			total=True
 		)
+		budget_info = pd.DataFrame([
+			['Budget', BUDGET_PER_MONTH[month]],
+			['Carry Over', carry_over],
+			['New Budget', BUDGET_PER_MONTH[month] + carry_over],
+			['Remaining', BUDGET_PER_MONTH[month] + carry_over - data.Amount.sum()],
+		])
+		start_row, max_col = self.write_table(
+			budget_info,
+			sheet_name + 'BudgetTable',
+			sheet,
+			start_row,
+			start_col,
+			[{}, { 'format': self.formats['currency'] }],
+			headers = False
+		)
 		pivot = data.pivot_table(
 			index = 'Category',
 			**pivot_kwargs
 		).reset_index()
 		cat_table_name = sheet_name + 'CatPivot'
-		start_row, max_col = self.write_table(
+		start_row, col = self.write_table(
 			pivot,
 			cat_table_name,
 			sheet,
@@ -360,6 +375,7 @@ class Writer:
 			start_col,
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
+		max_col = max(max_col, col)
 		data['Day'] = data['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = data.pivot_table(
 			index = 'Day',
@@ -415,22 +431,7 @@ class Writer:
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
 		max_col = max(max_col, col)
-		budget_info = pd.DataFrame([
-			['Budget', BUDGET_PER_MONTH[month]],
-			['Carry Over', carry_over],
-			['New Budget', BUDGET_PER_MONTH[month] + carry_over],
-			['Remaining', BUDGET_PER_MONTH[month] + carry_over - data.Amount.sum()],
-		])
-		start_row, col = self.write_table(
-			budget_info,
-			sheet_name + 'BudgetTable',
-			sheet,
-			start_row,
-			start_col,
-			[{}, { 'format': self.formats['currency'] }],
-			headers = False
-		)
-		start_col = max_col = max(max_col, col)
+		start_col = max_col
 		sheet.autofit()
 		start_row = 0
 		_, start_col = self.write_month_table(
