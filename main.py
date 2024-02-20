@@ -389,6 +389,7 @@ class Writer:
 		pivot_columns_args = column_currency_kwargs, column_currency_kwargs
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
+		# table of transactions
 		self.write_table(
 			data,
 			sheet_name + 'Table',
@@ -404,6 +405,7 @@ class Writer:
 			),
 			total=True
 		)
+		# Total budget / carryover / remaining
 		budget_info = pd.DataFrame([
 			['Budget', BUDGET_PER_MONTH[month]],
 			['Carry Over', carry_over],
@@ -418,6 +420,7 @@ class Writer:
 			[{}, { 'format': self.formats['currency'] }],
 			headers = False
 		)
+		# category pivot
 		pivot = data.pivot_table(
 			index = 'Category',
 			**pivot_kwargs
@@ -429,6 +432,7 @@ class Writer:
 			sheet,
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
+		# day pivot
 		data['Day'] = data['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = data.pivot_table(
 			index = 'Day',
@@ -446,6 +450,7 @@ class Writer:
 			sheet,
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
+		# cashback pivot
 		pivot = data.pivot_table(
 			index = 'CashBack %',
 			**pivot_kwargs
@@ -457,6 +462,7 @@ class Writer:
 			sheet,
 			self.columns(pivot, column_percent_kwargs, *pivot_columns_args),
 		)
+		# day number pivot
 		data_copy = data.copy()
 		data_copy['Day Number'] = data.Date.apply(lambda x: int(x.strftime('%-d')))
 		pivot = data_copy.pivot_table(
@@ -477,12 +483,14 @@ class Writer:
 		)
 		self.go_to_next()
 		sheet.autofit()
+		# month table
 		self.write_month_table(
 			data,
 			sheet,
 			month
 		)
 		self.go_to_next()
+		# charts
 		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
 				('Category', cat_table_name, 'pie', True),
