@@ -38,8 +38,10 @@ EMPTY = pd.DataFrame({
 	'Note': [],
 	'CashBack %': [],
 	'CashBack Reward': [],
+	'Account': [],
 })
 STARTING_STYLE_COUNT = 9
+ENDING_STYLE_COUNT = 14
 
 def parse_date(date: str) -> datetime:
 	return datetime.strptime(date, '%m/%d/%Y')
@@ -73,14 +75,15 @@ class Writer:
 			'merged': self.workbook.add_format({
 				'bold': True,
 				'align': 'center',
-				'bg_color': '#4e81bd',
-				'font_color': 'white',
+				'bg_color': '#222222',
+				'font_color': '#eeeeee',
 				'font_size': 15,
 				'border_color': 'white',
 				'border': 1
 			}),
 		}
 		self.data = {}
+		self.carry_over = {}
 		self.reset_style_count()
 
 	def reset_position(self):
@@ -106,6 +109,8 @@ class Writer:
 		result = { 'style': f'Table Style medium {self.style_count if override is None else override}' }
 		if override is None:
 			self.style_count += 1
+			if self.style_count > ENDING_STYLE_COUNT:
+				self.reset_style_count()
 		return result
 
 	@staticmethod
@@ -151,15 +156,14 @@ class Writer:
 			# get rid of warning
 			engine='python'
 		).sort_values(by = 'Date')
-		carry_over = data.loc[data.Category == 'Carry Over', 'Amount'].sum()
-		data = data[data.Category != 'Carry Over']
+		data.Amount *= -1
 		data.Date = data.Date.apply(parse_date)
 		tuple_col = data.Note.apply(self.parse_note)
 		data.Note = tuple_col.apply(lambda x: x[0])
 		data['CashBack %'] = tuple_col.apply(lambda x: x[1])
 		data['CashBack Reward'] = data.Amount * data['CashBack %']
 		self.data[month] = data.copy()
-		return data, carry_over
+		return data
 
 	@staticmethod
 	def columns(df: pd.DataFrame, *column_kwargs_list: dict) -> list[dict]:
@@ -371,16 +375,25 @@ class Writer:
 		sheet.set_column(start_col, start_col + cols, 10)
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_month(self, month: int, data: pd.DataFrame, carry_over: float, sheet_name: str = None):
+	def write_title(self, sheet, title: str, width: int):
+		self.row, col = self.write_title_at(sheet, title, width, self.row, self.column)
+		if col > self.next_column:
+			self.next_column = col
+
+	def write_title_at(self, sheet, title: str, width: int, start_row: int, start_col: int) -> (int, int):
+		sheet.merge_range(self.row, self.column, self.row, self.column + width - 1, title, self.formats['merged'])
+		return self.row + 1, self.column + width
+
+	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None):
 		'''
 		Create and write the sheet for a given month
 		:month: int 1-13, 1-12 for the months of the year and 13 for all of them
 		:data: the dataframe contianing the transactions for the month
-		:carry_over: the money leftover from last month (negative means overspent)
 		:sheet_name: optional, name to give the sheet created, if left None will be the month name
 		'''
 		self.reset_style_count()
 		self.reset_position()
+		data_headers = data.columns[data.columns != 'Account'].values
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
 		column_date_kwargs = { 'format': self.formats['date'] }
@@ -389,30 +402,42 @@ class Writer:
 		pivot_columns_args = column_currency_kwargs, column_currency_kwargs
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
-		# table of transactions
-		self.write_table(
-			data,
-			sheet_name + 'Table',
-			sheet,
-			self.columns(
+		# table of default transactions
+		def write_transaction_table(data: pd.DataFrame, table_name: str):
+			self.write_title(sheet, table_name, len(data.columns))
+			self.write_table(
 				data,
-				{ **column_total_kwargs, **column_date_kwargs },
-				{},
-				column_currency_kwargs,
-				{},
-				column_percent_kwargs,
-				column_currency_kwargs
-			),
-			total=True
-		)
+				table_name + 'Table',
+				sheet,
+				self.columns(
+					default_transactions,
+					{ **column_total_kwargs, **column_date_kwargs },
+					{},
+					column_currency_kwargs,
+					{},
+					column_percent_kwargs,
+					column_currency_kwargs
+				),
+				total=True
+			)
+		default_transactions = data.loc[data.Account == 'Default', data_headers]
+		write_transaction_table(default_transactions, sheet_name + 'Default')
+		emergency_transactions = data.loc[data.Account == 'Emergency', data_headers]
+		emergency_transactions.Amount *= -1
+		write_transaction_table(emergency_transactions, sheet_name + 'Emergency')
+		big_purchases_transactions = data.loc[data.Account == 'Big purchases', data_headers]
+		big_purchases_transactions.Amount *= -1
+		write_transaction_table(big_purchases_transactions, sheet_name + 'Big Purchases')
+		self.go_to_next()
 		# Total budget / carryover / remaining
+		prev_carry_over = self.carry_over.get(month - 1, 0)
+		self.carry_over[month] = BUDGET_PER_MONTH[month] + prev_carry_over - default_transactions.Amount.sum()
 		budget_info = pd.DataFrame([
 			['Budget', BUDGET_PER_MONTH[month]],
-			['Carry Over', carry_over],
-			['New Budget', BUDGET_PER_MONTH[month] + carry_over],
-			['Remaining', BUDGET_PER_MONTH[month] + carry_over - data.Amount.sum()],
+			['Carry Over', prev_carry_over],
+			['New Budget', BUDGET_PER_MONTH[month] + prev_carry_over],
+			['Remaining', self.carry_over[month]],
 		])
-		self.go_to_next()
 		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
@@ -421,7 +446,7 @@ class Writer:
 			headers = False
 		)
 		# category pivot
-		pivot = data.pivot_table(
+		pivot = default_transactions.pivot_table(
 			index = 'Category',
 			**pivot_kwargs
 		).reset_index()
@@ -433,8 +458,8 @@ class Writer:
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
 		# day pivot
-		data['Day'] = data['Date'].apply(lambda x: x.strftime('%w%a'))
-		pivot = data.pivot_table(
+		default_transactions['Day'] = default_transactions['Date'].apply(lambda x: x.strftime('%w%a'))
+		pivot = default_transactions.pivot_table(
 			index = 'Day',
 			**pivot_kwargs
 		).reset_index()
@@ -451,7 +476,7 @@ class Writer:
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
 		# cashback pivot
-		pivot = data.pivot_table(
+		pivot = default_transactions.pivot_table(
 			index = 'CashBack %',
 			**pivot_kwargs
 		).reset_index()
@@ -463,9 +488,9 @@ class Writer:
 			self.columns(pivot, column_percent_kwargs, *pivot_columns_args),
 		)
 		# day number pivot
-		data_copy = data.copy()
-		data_copy['Day Number'] = data.Date.apply(lambda x: int(x.strftime('%-d')))
-		pivot = data_copy.pivot_table(
+		default_transactions_copy = default_transactions.copy()
+		default_transactions_copy['Day Number'] = default_transactions.Date.apply(lambda x: int(x.strftime('%-d')))
+		pivot = default_transactions_copy.pivot_table(
 			index = 'Day Number',
 			**pivot_kwargs
 		).reset_index()
@@ -485,7 +510,7 @@ class Writer:
 		sheet.autofit()
 		# month table
 		self.write_month_table(
-			data,
+			default_transactions,
 			sheet,
 			month
 		)
@@ -518,9 +543,9 @@ class Writer:
 		:month: int, 1-12 number representing the months
 		'''
 		try:
-			data, carry_over = self.read_month(month)
+			data = self.read_month(month)
 			if not data.empty:
-				self.write_month(month, data, carry_over)
+				self.write_month(month, data)
 		except FileNotFoundError:
 			pass
 
@@ -531,7 +556,6 @@ class Writer:
 		self.write_month(
 			13,
 			pd.concat(self.data.values()) if len(self.data) > 0 else EMPTY.copy(),
-			0,
 			'Summary'
 		)
 
