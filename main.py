@@ -404,6 +404,7 @@ class Writer:
 		sheet = self.workbook.add_worksheet(sheet_name)
 		# table of default transactions
 		def write_transaction_table(data: pd.DataFrame, table_name: str):
+			if data.shape[0] == 0: return
 			self.write_title(sheet, table_name, len(data.columns))
 			self.write_table(
 				data,

@@ -18,11 +18,13 @@ e.g. `Transactions Jan 1, 2024 - Jan 31, 2024 (1).csv`
 expects a csv file with 4 columns representing date, category, ammount, and note
 
 ```
-Date,Category,Amount,Note
-01/01/2024,Eating Out,123.45,Wood Ranch
+Date,Category,Amount,Note,Account
+01/01/2024,Eating Out,123.45,Wood Ranch,Default
 ```
 optionally if note contains a `|` then it will be split and the right side will be read
-as cashback percentage
+as cashback percentage.
+
+accepted Accounts are Default, Emergency, and Big purchases
 
 ## output
 
