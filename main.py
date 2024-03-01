@@ -84,6 +84,8 @@ class Writer:
 		}
 		self.data = {}
 		self.carry_over = {}
+		self.emergency_balance = 0
+		self.big_purchases_balance = 0
 		self.reset_style_count()
 
 	def reset_position(self):
@@ -152,7 +154,7 @@ class Writer:
 		filename = self.get_csv_filename_from_month(MONTHS_SHORT[month])
 		data = pd.read_csv(
 			filename,
-			sep =', |,',
+			sep ='\s*,\s*',
 			# get rid of warning
 			engine='python'
 		).sort_values(by = 'Date')
@@ -408,7 +410,7 @@ class Writer:
 			self.write_title(sheet, table_name, len(data.columns))
 			self.write_table(
 				data,
-				table_name + 'Table',
+				sheet_name + table_name.replace(' ', '_') + 'Table',
 				sheet,
 				self.columns(
 					default_transactions,
@@ -422,13 +424,15 @@ class Writer:
 				total=True
 			)
 		default_transactions = data.loc[data.Account == 'Default', data_headers]
-		write_transaction_table(default_transactions, sheet_name + 'Default')
+		write_transaction_table(default_transactions, 'Default')
 		emergency_transactions = data.loc[data.Account == 'Emergency', data_headers]
 		emergency_transactions.Amount *= -1
-		write_transaction_table(emergency_transactions, sheet_name + 'Emergency')
+		self.emergency_balance += emergency_transactions.Amount.sum()
+		write_transaction_table(emergency_transactions, 'Emergency')
 		big_purchases_transactions = data.loc[data.Account == 'Big purchases', data_headers]
 		big_purchases_transactions.Amount *= -1
-		write_transaction_table(big_purchases_transactions, sheet_name + 'Big Purchases')
+		self.big_purchases_balance += big_purchases_transactions.Amount.sum()
+		write_transaction_table(big_purchases_transactions, 'Big Purchases')
 		self.go_to_next()
 		# Total budget / carryover / remaining
 		prev_carry_over = self.carry_over.get(month - 1, 0)
@@ -438,6 +442,8 @@ class Writer:
 			['Carry Over', prev_carry_over],
 			['New Budget', BUDGET_PER_MONTH[month] + prev_carry_over],
 			['Remaining', self.carry_over[month]],
+			['Emergency Balance', self.emergency_balance],
+			['Big Purchases Balance', self.big_purchases_balance],
 		])
 		self.write_table(
 			budget_info,
@@ -574,6 +580,10 @@ class Writer:
 		# just make it big enough to fill any screen
 		self.workbook.set_size(1000000, 1000000)
 
+	def reset_balances(self):
+		self.emergency_balance = 0
+		self.big_purchases_balance = 0
+
 	def save(self):
 		self.workbook.close()
 
@@ -586,6 +596,7 @@ def main():
 	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {datestring}.xlsx'))
 	for month in MONTHS.keys():
 		writer.handle_month(month)
+	writer.reset_balances()
 	writer.write_summary()
 	writer.focus(now.month)
 	writer.full_screen()
