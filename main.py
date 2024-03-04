@@ -424,7 +424,7 @@ class Writer:
 			)
 		default_transactions = data.loc[data.Account == 'Default', data_headers]
 		write_transaction_table(default_transactions, 'Default')
-		accounts = data.loc[data.Account != 'Default', 'Account'].unique().sort_values()
+		accounts = data.loc[data.Account != 'Default', 'Account'].sort_values().unique()
 		for account in accounts:
 			transactions = data.loc[data.Account == account, data_headers]
 			transactions.Amount *= -1
