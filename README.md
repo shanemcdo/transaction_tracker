@@ -24,7 +24,7 @@ Date,Category,Amount,Note,Account
 optionally if note contains a `|` then it will be split and the right side will be read
 as cashback percentage.
 
-accepted Accounts are Default, Emergency, and Big purchases
+the account `Default` is a monthly budget and other accounts are for earmarked categories such as "Emergency".
 
 ## output
 

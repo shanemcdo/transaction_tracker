@@ -84,8 +84,7 @@ class Writer:
 		}
 		self.data = {}
 		self.carry_over = {}
-		self.emergency_balance = 0
-		self.big_purchases_balance = 0
+		self.reset_balances()
 		self.reset_style_count()
 
 	def reset_position(self):
@@ -425,14 +424,12 @@ class Writer:
 			)
 		default_transactions = data.loc[data.Account == 'Default', data_headers]
 		write_transaction_table(default_transactions, 'Default')
-		emergency_transactions = data.loc[data.Account == 'Emergency', data_headers]
-		emergency_transactions.Amount *= -1
-		self.emergency_balance += emergency_transactions.Amount.sum()
-		write_transaction_table(emergency_transactions, 'Emergency')
-		big_purchases_transactions = data.loc[data.Account == 'Big purchases', data_headers]
-		big_purchases_transactions.Amount *= -1
-		self.big_purchases_balance += big_purchases_transactions.Amount.sum()
-		write_transaction_table(big_purchases_transactions, 'Big Purchases')
+		accounts = data.loc[data.Account != 'Default', 'Account'].unique().sort_values()
+		for account in accounts:
+			transactions = data.loc[data.Account == account, data_headers]
+			transactions.Amount *= -1
+			write_transaction_table(transactions, account)
+			self.balances[account] = self.balances.get(account, 0) + transactions.Amount.sum()
 		self.go_to_next()
 		# Total budget / carryover / remaining
 		prev_carry_over = self.carry_over.get(month - 1, 0)
@@ -442,8 +439,10 @@ class Writer:
 			['Carry Over', prev_carry_over],
 			['New Budget', BUDGET_PER_MONTH[month] + prev_carry_over],
 			['Remaining', self.carry_over[month]],
-			['Emergency Balance', self.emergency_balance],
-			['Big Purchases Balance', self.big_purchases_balance],
+			*(
+				[f'{account} Balance', self.balances.get(account, 0)]
+				for account in accounts
+			)
 		])
 		self.write_table(
 			budget_info,
@@ -581,8 +580,7 @@ class Writer:
 		self.workbook.set_size(1000000, 1000000)
 
 	def reset_balances(self):
-		self.emergency_balance = 0
-		self.big_purchases_balance = 0
+		self.balances = {}
 
 	def save(self):
 		self.workbook.close()
