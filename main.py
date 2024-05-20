@@ -136,6 +136,9 @@ class Writer:
 		:sep: the string to split the note on
 		:return: note message and cashback percent in a tuple
 		'''
+		note = str(note)
+		if note == 'nan':
+			note = ''
 		if sep in note:
 			try:
 				note, cashback = map(lambda x: x.strip('%\n\r\t '), note.split(sep, 1))
@@ -159,6 +162,7 @@ class Writer:
 		).sort_values(by = 'Date')
 		data.Amount *= -1
 		data.Date = data.Date.apply(parse_date)
+		print(data)
 		tuple_col = data.Note.apply(self.parse_note)
 		data.Note = tuple_col.apply(lambda x: x[0])
 		data['CashBack %'] = tuple_col.apply(lambda x: x[1])

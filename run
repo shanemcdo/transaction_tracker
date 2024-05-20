@@ -1,11 +1,10 @@
 #!/bin/sh
 
 source venv/bin/activate && \
-	./main.py || \
+	./main.py | grep -v UserWarning  || \
 	exit 1
 most_recent="$(ls -t out/* | head -n1)"
 if [ ! -z "$most_recent" ]; then
 	ln -f "$most_recent" "out/active.xlsx"
 	[ "$1" != "-d" ] && open "$most_recent"
 fi
-
