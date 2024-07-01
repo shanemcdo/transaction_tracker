@@ -42,6 +42,7 @@ EMPTY = pd.DataFrame({
 })
 STARTING_STYLE_COUNT = 9
 ENDING_STYLE_COUNT = 14
+DEFAULT_ACCOUNT = 'Default'
 
 def parse_date(date: str) -> datetime:
 	return datetime.strptime(date, '%m/%d/%Y')
@@ -426,9 +427,9 @@ class Writer:
 				),
 				total=True
 			)
-		default_transactions = data.loc[data.Account == 'Default', data_headers]
-		write_transaction_table(default_transactions, 'Default')
-		accounts = data.loc[data.Account != 'Default', 'Account'].sort_values().unique()
+		default_transactions = data.loc[data.Account == DEFAULT_ACCOUNT, data_headers]
+		write_transaction_table(default_transactions, DEFAULT_ACCOUNT)
+		accounts = data.loc[data.Account != DEFAULT_ACCOUNT, 'Account'].sort_values().unique()
 		for account in accounts:
 			transactions = data.loc[data.Account == account, data_headers]
 			transactions.Amount *= -1
