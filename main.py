@@ -42,7 +42,7 @@ EMPTY = pd.DataFrame({
 })
 STARTING_STYLE_COUNT = 9
 ENDING_STYLE_COUNT = 14
-DEFAULT_ACCOUNT = 'Default'
+DEFAULT_ACCOUNT = 'New'
 
 def parse_date(date: str) -> datetime:
 	return datetime.strptime(date, '%m/%d/%Y')
@@ -399,6 +399,9 @@ class Writer:
 		'''
 		self.reset_style_count()
 		self.reset_position()
+		income = data[data.Amount < 0]
+		income.Amount *= -1
+		data = data[data.Amount > 0]
 		data_headers = data.columns[data.columns != 'Account'].values
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
@@ -409,11 +412,11 @@ class Writer:
 		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
 		# table of default transactions
-		def write_transaction_table(data: pd.DataFrame, table_name: str):
+		def write_transaction_table(data: pd.DataFrame, table_name: str, include_cashback: bool = True):
 			if data.shape[0] == 0: return
 			self.write_title(sheet, table_name, len(data.columns))
 			self.write_table(
-				data,
+				data if include_cashback else data[['Date', 'Category', 'Amount', 'Note']],
 				sheet_name + table_name.replace(' ', '_') + 'Table',
 				sheet,
 				self.columns(
@@ -429,6 +432,8 @@ class Writer:
 			)
 		default_transactions = data.loc[data.Account == DEFAULT_ACCOUNT, data_headers]
 		write_transaction_table(default_transactions, DEFAULT_ACCOUNT)
+		default_income_transactions = income.loc[income.Account == DEFAULT_ACCOUNT, data_headers]
+		write_transaction_table(default_income_transactions, DEFAULT_ACCOUNT + ' Income', False)
 		accounts = data.loc[data.Account != DEFAULT_ACCOUNT, 'Account'].sort_values().unique()
 		for account in accounts:
 			transactions = data.loc[data.Account == account, data_headers]
@@ -439,11 +444,12 @@ class Writer:
 		# Total budget / carryover / remaining
 		prev_carry_over = self.carry_over.get(month - 1, 0)
 		self.carry_over[month] = BUDGET_PER_MONTH[month] + prev_carry_over - default_transactions.Amount.sum()
+		income_sum = income.Amount.sum()
+		expenses_sum = data.Amount.sum()
 		budget_info = pd.DataFrame([
-			['Budget', BUDGET_PER_MONTH[month]],
-			['Carry Over', prev_carry_over],
-			['New Budget', BUDGET_PER_MONTH[month] + prev_carry_over],
-			['Remaining', self.carry_over[month]],
+			['Income', income_sum],
+			['Expenses', expenses_sum],
+			['Remaining', income_sum - expenses_sum],
 			*(
 				[f'{account} Balance', self.balances.get(account, 0)]
 				for account in accounts
