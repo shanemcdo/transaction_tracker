@@ -504,6 +504,24 @@ class Writer:
 			sheet,
 			self.columns(pivot, column_percent_kwargs, *pivot_columns_args),
 		)
+		# avg cashback 
+		cashback_sum = data['CashBack Reward'].sum()
+		cashback_info = pd.DataFrame({
+			'Spending Sum': [ expenses_sum ],
+			'Cashback Sum': [ cashback_sum ],
+			'Average cashback yield': [ cashback_sum / expenses_sum ],
+		})
+		self.write_table(
+			cashback_info,
+			sheet_name + 'CashBackInfoTable',
+			sheet,
+			self.columns(
+				cashback_info,
+				{ 'format': self.formats['currency'] },
+				{ 'format': self.formats['currency'] },
+				{ 'format': self.formats['percent'] }
+			)
+		)
 		# day number pivot
 		default_transactions_copy = default_transactions.copy()
 		default_transactions_copy['Day Number'] = default_transactions.Date.apply(lambda x: int(x.strftime('%-d')))
