@@ -550,6 +550,7 @@ class Writer:
 			'Eligible Spending Sum': [ eligible_expenses_sum ],
 			'Cashback Sum': [ cashback_sum ],
 			'Average cashback yield': [ cashback_sum / eligible_expenses_sum ],
+			'Average cashback yield excluding 0% cashback': [ cashback_sum / pivot[pivot['CashBack %'] != 0].Amount.sum() ],
 		})
 		self.write_table(
 			cashback_info,
@@ -559,7 +560,8 @@ class Writer:
 				cashback_info,
 				{ 'format': self.formats['currency'] },
 				{ 'format': self.formats['currency'] },
-				{ 'format': self.formats['percent'] }
+				{ 'format': self.formats['percent'] },
+				{ 'format': self.formats['percent'] },
 			)
 		)
 		# day number pivot
