@@ -32,6 +32,23 @@ YEAR = 2024
 # vestigial rn
 BUDGET_PER_MONTH = { i: 1000.00 for i in range(1, 13) }
 BUDGET_PER_MONTH[13] = sum(BUDGET_PER_MONTH.values())
+CATEGORY_BUDGET = {
+	'Rent': 2190.0,
+	'Investing': 500.0,
+	'Fuel': 150.0,
+	'Utilities': 270.0,
+	'Groceries': 500.0,
+	'Eating Out': 300.0,
+	'Other': 200.0,
+}
+CATEGORY_BUDGET_DF_PER_MONTH = { i: pd.DataFrame({
+	'Category': CATEGORY_BUDGET.keys(),
+	'Expected': CATEGORY_BUDGET.values(),
+}) for i in range(1, 13) }
+CATEGORY_BUDGET_DF_PER_MONTH[13] = pd.DataFrame({
+	'Category': CATEGORY_BUDGET.keys(),
+	'Expected': list(map(lambda x: x * 12, CATEGORY_BUDGET.values()))
+})
 EMPTY = pd.DataFrame({
 	'Date': [],
 	'Category': [],
@@ -475,6 +492,26 @@ class Writer:
 			cat_table_name,
 			sheet,
 			self.columns(pivot, {}, *pivot_columns_args),
+		)
+		# Budget Categories Table
+		budget_categories_df = CATEGORY_BUDGET_DF_PER_MONTH[month].join(
+			pivot[['Category', 'Amount']].set_index('Category'),
+			on='Category',
+		)
+		budget_categories_df.Amount = budget_categories_df.Amount.fillna(0)
+		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot.loc[pivot.Category.map(lambda x: x not in list(CATEGORY_BUDGET_DF_PER_MONTH[month].Category) or x == 'Other'), 'Amount'].sum()
+		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
+		self.write_table(
+			budget_categories_df,
+			sheet_name + 'BudgetCategoriesTable',
+			sheet,
+			self.columns(
+				budget_categories_df,
+				{},
+				{ 'format': self.formats['currency'] },
+				{ 'format': self.formats['currency'] },
+				{ 'format': self.formats['currency'] },
+			)
 		)
 		# day pivot
 		default_transactions['Day'] = default_transactions['Date'].apply(lambda x: x.strftime('%w%a'))
