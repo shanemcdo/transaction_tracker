@@ -29,6 +29,7 @@ DEFAULT_OUTPUT_DIR = './out/'
 INPUT_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
 YEAR = 2024
 # TODO: change if budget gets adjusted
+# vestigial rn
 BUDGET_PER_MONTH = { i: 1000.00 for i in range(1, 13) }
 BUDGET_PER_MONTH[13] = sum(BUDGET_PER_MONTH.values())
 EMPTY = pd.DataFrame({
@@ -443,6 +444,7 @@ class Writer:
 		self.go_to_next()
 		# Total budget / carryover / remaining
 		prev_carry_over = self.carry_over.get(month - 1, 0)
+		# vestigial rn
 		self.carry_over[month] = BUDGET_PER_MONTH[month] + prev_carry_over - default_transactions.Amount.sum()
 		income_sum = income.Amount.sum()
 		expenses_sum = data.Amount.sum()
@@ -506,10 +508,11 @@ class Writer:
 		)
 		# avg cashback 
 		cashback_sum = data['CashBack Reward'].sum()
+		eligible_expenses_sum = data[data.Category != 'Investing'].Amount.sum()
 		cashback_info = pd.DataFrame({
-			'Spending Sum': [ expenses_sum ],
+			'Eligible Spending Sum': [ eligible_expenses_sum ],
 			'Cashback Sum': [ cashback_sum ],
-			'Average cashback yield': [ cashback_sum / expenses_sum ],
+			'Average cashback yield': [ cashback_sum / eligible_expenses_sum ],
 		})
 		self.write_table(
 			cashback_info,
