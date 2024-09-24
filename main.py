@@ -478,7 +478,7 @@ class Writer:
 			budget_info,
 			sheet_name + 'BudgetTable',
 			sheet,
-			[{}, { 'format': self.formats['currency'] }],
+			[{}, column_currency_kwargs],
 			headers = False
 		)
 		# category pivot
@@ -508,10 +508,11 @@ class Writer:
 			self.columns(
 				budget_categories_df,
 				{},
-				{ 'format': self.formats['currency'] },
-				{ 'format': self.formats['currency'] },
-				{ 'format': self.formats['currency'] },
-			)
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_currency_kwargs,
+			),
+			True
 		)
 		# day pivot
 		default_transactions['Day'] = default_transactions['Date'].apply(lambda x: x.strftime('%w%a'))
@@ -558,10 +559,10 @@ class Writer:
 			sheet,
 			self.columns(
 				cashback_info,
-				{ 'format': self.formats['currency'] },
-				{ 'format': self.formats['currency'] },
-				{ 'format': self.formats['percent'] },
-				{ 'format': self.formats['percent'] },
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_percent_kwargs,
+				column_percent_kwargs,
 			)
 		)
 		# day number pivot
