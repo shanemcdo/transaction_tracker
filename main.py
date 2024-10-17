@@ -7,6 +7,16 @@ import calendar
 import pandas as pd
 from glob import glob
 
+INCOME_CATEGORIES = [
+	'Transfer',
+	'Cashback',
+	'Salary',
+	'Fatherly Support',
+	'Check',
+	'Reward',
+	'Sale',
+	'Carry Over',
+]
 MONTHS = {
 	1: 'January',
 	2: 'February',
@@ -33,10 +43,10 @@ YEAR = 2024
 BUDGET_PER_MONTH = { i: 1000.00 for i in range(1, 13) }
 BUDGET_PER_MONTH[13] = sum(BUDGET_PER_MONTH.values())
 CATEGORY_BUDGET = {
-	'Rent': 2190.0,
+	'Rent': 2300.0,
 	'Investing': 500.0,
 	'Fuel': 150.0,
-	'Utilities': 270.0,
+	'Utilities': 190.0,
 	'Groceries': 500.0,
 	'Eating Out': 300.0,
 	'Other': 200.0,
@@ -417,9 +427,9 @@ class Writer:
 		'''
 		self.reset_style_count()
 		self.reset_position()
-		income = data[data.Amount < 0]
+		income = data[data.Category.map(lambda x: x in INCOME_CATEGORIES)]
 		income.Amount *= -1
-		data = data[data.Amount > 0]
+		data = data[data.Category.map(lambda x: x not in INCOME_CATEGORIES)]
 		data_headers = data.columns[data.columns != 'Account'].values
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
