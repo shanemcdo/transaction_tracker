@@ -524,6 +524,27 @@ class Writer:
 			),
 			True
 		)
+		# reimbursement/refund table
+		categories_list = data.Category.unique()
+		reimbursement_df = pd.DataFrame({
+			'Category': categories_list,
+			'Spent':               [ (data[(data.Category == cat) & (data.Amount > 0)]).Amount.sum() for cat in categories_list ],
+			'Reimbursed/Refunded': [ (data[(data.Category == cat) & (data.Amount < 0)]).Amount.sum() for cat in categories_list ],
+		})
+		print(categories_list)
+		print(reimbursement_df)
+		self.write_table(
+			reimbursement_df,
+			sheet_name + 'ReimbursementTable',
+			sheet,
+			self.columns(
+				reimbursement_df,
+				{},
+				column_currency_kwargs,
+				column_currency_kwargs,
+			),
+			True
+		)
 		# day pivot
 		default_transactions['Day'] = default_transactions['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = default_transactions.pivot_table(
