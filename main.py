@@ -459,6 +459,7 @@ class Writer:
 				total=True
 			)
 		default_transactions = data.loc[data.Account == DEFAULT_ACCOUNT, data_headers]
+		positive_default_transactions = default_transactions[default_transactions.Amount > 0]
 		write_transaction_table(default_transactions, DEFAULT_ACCOUNT)
 		default_income_transactions = income.loc[income.Account == DEFAULT_ACCOUNT, data_headers]
 		write_transaction_table(default_income_transactions, DEFAULT_ACCOUNT + ' Income', False)
@@ -525,11 +526,11 @@ class Writer:
 			True
 		)
 		# reimbursement/refund table
-		categories_list = data.Category.unique()
+		categories_list = default_transactions.Category.unique()
 		reimbursement_df = pd.DataFrame({
 			'Category': categories_list,
-			'Spent':               [ (data[(data.Category == cat) & (data.Amount > 0)]).Amount.sum() for cat in categories_list ],
-			'Reimbursed/Refunded': [ (data[(data.Category == cat) & (data.Amount < 0)]).Amount.sum() for cat in categories_list ],
+			'Spent':               [ (default_transactions[(default_transactions.Category == cat) & (default_transactions.Amount > 0)]).Amount.sum() for cat in categories_list ],
+			'Reimbursed/Refunded': [ (default_transactions[(default_transactions.Category == cat) & (default_transactions.Amount < 0)]).Amount.sum() for cat in categories_list ],
 		})
 		print(categories_list)
 		print(reimbursement_df)
@@ -564,7 +565,7 @@ class Writer:
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
 		# cashback pivot
-		pivot = default_transactions.pivot_table(
+		pivot = positive_default_transactions.pivot_table(
 			index = 'CashBack %',
 			**pivot_kwargs
 		).reset_index()
@@ -576,8 +577,8 @@ class Writer:
 			self.columns(pivot, column_percent_kwargs, *pivot_columns_args),
 		)
 		# avg cashback 
-		cashback_sum = data['CashBack Reward'].sum()
-		eligible_expenses_sum = data[data.Category != 'Investing'].Amount.sum()
+		cashback_sum = positive_default_transactions['CashBack Reward'].sum()
+		eligible_expenses_sum = positive_default_transactions[positive_default_transactions.Category != 'Investing'].Amount.sum()
 		cashback_info = pd.DataFrame({
 			'Eligible Spending Sum': [ eligible_expenses_sum ],
 			'Cashback Sum': [ cashback_sum ],
