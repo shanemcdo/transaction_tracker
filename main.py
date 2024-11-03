@@ -512,6 +512,7 @@ class Writer:
 		budget_categories_df.Amount = budget_categories_df.Amount.fillna(0)
 		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot.loc[pivot.Category.map(lambda x: x not in list(CATEGORY_BUDGET_DF_PER_MONTH[month].Category) or x == 'Other'), 'Amount'].sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
+		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
 		self.write_table(
 			budget_categories_df,
 			sheet_name + 'BudgetCategoriesTable',
@@ -522,6 +523,7 @@ class Writer:
 				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
+				column_percent_kwargs,
 			),
 			True
 		)
