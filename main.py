@@ -529,10 +529,13 @@ class Writer:
 		)
 		# reimbursement/refund table
 		categories_list = default_transactions.Category.unique()
+		spent_list =      [ (default_transactions[(default_transactions.Category == cat) & (default_transactions.Amount > 0)]).Amount.sum() for cat in categories_list ]
+		reimbursed_list = [ (default_transactions[(default_transactions.Category == cat) & (default_transactions.Amount < 0)]).Amount.sum() for cat in categories_list ]
 		reimbursement_df = pd.DataFrame({
 			'Category': categories_list,
-			'Spent':               [ (default_transactions[(default_transactions.Category == cat) & (default_transactions.Amount > 0)]).Amount.sum() for cat in categories_list ],
-			'Reimbursed/Refunded': [ (default_transactions[(default_transactions.Category == cat) & (default_transactions.Amount < 0)]).Amount.sum() for cat in categories_list ],
+			'Spent': spent_list,
+			'Reimbursed/Refunded': reimbursed_list,
+			'Amount': [ spent + reimbursed for spent, reimbursed in zip(spent_list, reimbursed_list) ]
 		})
 		print(categories_list)
 		print(reimbursement_df)
@@ -543,6 +546,7 @@ class Writer:
 			self.columns(
 				reimbursement_df,
 				{},
+				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
 			),
