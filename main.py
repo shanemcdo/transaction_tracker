@@ -8,7 +8,6 @@ import pandas as pd
 from glob import glob
 
 INCOME_CATEGORIES = [
-	'Transfer',
 	'Cashback',
 	'Salary',
 	'Fatherly Support',
@@ -70,7 +69,7 @@ EMPTY = pd.DataFrame({
 })
 STARTING_STYLE_COUNT = 9
 ENDING_STYLE_COUNT = 14
-DEFAULT_ACCOUNT = 'New'
+DEFAULT_ACCOUNT = 'Monthly'
 
 def parse_date(date: str) -> datetime:
 	return datetime.strptime(date, '%m/%d/%Y')
@@ -190,6 +189,7 @@ class Writer:
 			engine='python'
 		).sort_values(by = 'Date')
 		data.Amount *= -1
+		data = data[data.Category != 'Carry Over']
 		data.Date = data.Date.apply(parse_date)
 		print(data)
 		tuple_col = data.Note.apply(self.parse_note)
@@ -427,9 +427,6 @@ class Writer:
 		'''
 		self.reset_style_count()
 		self.reset_position()
-		income = data[data.Category.map(lambda x: x in INCOME_CATEGORIES)]
-		income.Amount *= -1
-		data = data[data.Category.map(lambda x: x not in INCOME_CATEGORIES)]
 		data_headers = data.columns[data.columns != 'Account'].values
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
@@ -459,9 +456,14 @@ class Writer:
 				total=True
 			)
 		default_transactions = data.loc[data.Account == DEFAULT_ACCOUNT, data_headers]
+		income_condition = default_transactions.Category.map(lambda x: x in INCOME_CATEGORIES) & (default_transactions.Amount < 0)
+		default_income_transactions = default_transactions[income_condition]
+		default_income_transactions.Amount *= -1
+		default_transactions = default_transactions[~income_condition]
 		positive_default_transactions = default_transactions[default_transactions.Amount > 0]
+		all_expenses = data.loc[data.Category.map(lambda x: x not in INCOME_CATEGORIES), data_headers]
+		eligible_expenses = all_expenses[all_expenses.Category.map(lambda x: x not in [ 'Investing', 'Transfer' ])]
 		write_transaction_table(default_transactions, DEFAULT_ACCOUNT)
-		default_income_transactions = income.loc[income.Account == DEFAULT_ACCOUNT, data_headers]
 		write_transaction_table(default_income_transactions, DEFAULT_ACCOUNT + ' Income', False)
 		accounts = data.loc[data.Account != DEFAULT_ACCOUNT, 'Account'].sort_values().unique()
 		for account in accounts:
@@ -472,13 +474,12 @@ class Writer:
 		self.go_to_next()
 		# Total budget / carryover / remaining
 		prev_carry_over = self.carry_over.get(month - 1, 0)
-		# vestigial rn
 		self.carry_over[month] = BUDGET_PER_MONTH[month] + prev_carry_over - default_transactions.Amount.sum()
-		income_sum = income.Amount.sum()
-		expenses_sum = data.Amount.sum()
+		income_sum = default_income_transactions.Amount.sum()
+		expenses_sum = default_transactions.Amount.sum()
 		budget_info = pd.DataFrame([
-			['Income', income_sum],
-			['Expenses', expenses_sum],
+			['Monthly Income', income_sum],
+			['Monthly Expenses', expenses_sum],
 			['Remaining', income_sum - expenses_sum],
 			*(
 				[f'{account} Balance', self.balances.get(account, 0)]
@@ -492,19 +493,11 @@ class Writer:
 			[{}, column_currency_kwargs],
 			headers = False
 		)
-		# category pivot
+		# Budget Categories Table
 		pivot = default_transactions.pivot_table(
 			index = 'Category',
 			**pivot_kwargs
 		).reset_index()
-		cat_table_name = sheet_name + 'CatPivot'
-		self.write_table(
-			pivot,
-			cat_table_name,
-			sheet,
-			self.columns(pivot, {}, *pivot_columns_args),
-		)
-		# Budget Categories Table
 		budget_categories_df = CATEGORY_BUDGET_DF_PER_MONTH[month].join(
 			pivot[['Category', 'Amount']].set_index('Category'),
 			on='Category',
@@ -527,25 +520,31 @@ class Writer:
 			),
 			True
 		)
-		# reimbursement/refund table
-		categories_list = default_transactions.Category.unique()
-		spent_list =      [ (default_transactions[(default_transactions.Category == cat) & (default_transactions.Amount > 0)]).Amount.sum() for cat in categories_list ]
-		reimbursed_list = [ (default_transactions[(default_transactions.Category == cat) & (default_transactions.Amount < 0)]).Amount.sum() for cat in categories_list ]
+		# category pivot & reimbursement/refund table
+		pivot = all_expenses.pivot_table(
+			index = 'Category',
+			**pivot_kwargs
+		).reset_index()
+		categories_list = sorted(all_expenses.Category.unique())
+		spent_list =      [ (all_expenses[(all_expenses.Category == cat) & (all_expenses.Amount > 0)]).Amount.sum() for cat in categories_list ]
+		reimbursed_list = [ (all_expenses[(all_expenses.Category == cat) & (all_expenses.Amount < 0)]).Amount.sum() for cat in categories_list ]
 		reimbursement_df = pd.DataFrame({
 			'Category': categories_list,
 			'Spent': spent_list,
 			'Reimbursed/Refunded': reimbursed_list,
-			'Amount': [ spent + reimbursed for spent, reimbursed in zip(spent_list, reimbursed_list) ]
-		})
-		print(categories_list)
-		print(reimbursement_df)
+		}).join(
+			pivot[['Category', 'Amount', 'CashBack Reward']].set_index('Category'),
+			on='Category'
+		)
+		cat_table_name = sheet_name + 'CatPivot'
 		self.write_table(
 			reimbursement_df,
-			sheet_name + 'ReimbursementTable',
+			cat_table_name,
 			sheet,
 			self.columns(
 				reimbursement_df,
 				{},
+				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
@@ -584,7 +583,7 @@ class Writer:
 		)
 		# avg cashback 
 		cashback_sum = positive_default_transactions['CashBack Reward'].sum()
-		eligible_expenses_sum = positive_default_transactions[positive_default_transactions.Category != 'Investing'].Amount.sum()
+		eligible_expenses_sum = eligible_expenses.Amount.sum()
 		cashback_info = pd.DataFrame({
 			'Eligible Spending Sum': [ eligible_expenses_sum ],
 			'Cashback Sum': [ cashback_sum ],
