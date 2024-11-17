@@ -471,6 +471,7 @@ class Writer:
 			transactions.Amount *= -1
 			write_transaction_table(transactions, account)
 			self.balances[account] = self.balances.get(account, 0) + transactions.Amount.sum()
+		write_transaction_table(all_expenses, 'All Expenses')
 		self.go_to_next()
 		# Total budget / carryover / remaining
 		prev_carry_over = self.carry_over.get(month - 1, 0)
