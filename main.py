@@ -625,7 +625,7 @@ class Writer:
 		sheet.autofit()
 		# month table
 		self.write_month_table(
-			default_transactions,
+			all_expenses,
 			sheet,
 			month
 		)
