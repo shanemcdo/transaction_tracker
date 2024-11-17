@@ -603,9 +603,9 @@ class Writer:
 			)
 		)
 		# day number pivot
-		default_transactions_copy = default_transactions.copy()
-		default_transactions_copy['Day Number'] = default_transactions.Date.apply(lambda x: int(x.strftime('%-d')))
-		pivot = default_transactions_copy.pivot_table(
+		all_expenses_copy = all_expenses.copy()
+		all_expenses_copy['Day Number'] = all_expenses.Date.apply(lambda x: int(x.strftime('%-d')))
+		pivot = all_expenses_copy.pivot_table(
 			index = 'Day Number',
 			**pivot_kwargs
 		).reset_index()
