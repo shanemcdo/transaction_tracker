@@ -552,8 +552,8 @@ class Writer:
 			True
 		)
 		# day pivot
-		default_transactions['Day'] = default_transactions['Date'].apply(lambda x: x.strftime('%w%a'))
-		pivot = default_transactions.pivot_table(
+		all_expenses['Day'] = all_expenses['Date'].apply(lambda x: x.strftime('%w%a'))
+		pivot = all_expenses.pivot_table(
 			index = 'Day',
 			**pivot_kwargs
 		).reset_index()
@@ -570,7 +570,7 @@ class Writer:
 			self.columns(pivot, {}, *pivot_columns_args),
 		)
 		# cashback pivot
-		pivot = positive_default_transactions.pivot_table(
+		pivot = all_expenses.pivot_table(
 			index = 'CashBack %',
 			**pivot_kwargs
 		).reset_index()
@@ -582,7 +582,7 @@ class Writer:
 			self.columns(pivot, column_percent_kwargs, *pivot_columns_args),
 		)
 		# avg cashback 
-		cashback_sum = positive_default_transactions['CashBack Reward'].sum()
+		cashback_sum = all_expenses['CashBack Reward'].sum()
 		eligible_expenses_sum = eligible_expenses.Amount.sum()
 		cashback_info = pd.DataFrame({
 			'Eligible Spending Sum': [ eligible_expenses_sum ],
