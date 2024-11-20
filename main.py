@@ -499,7 +499,7 @@ class Writer:
 			all_cats.update(cats)
 			budget_categories_df.loc[budget_categories_df.Category == cat, 'Amount'] = pivot[pivot.Category.map(lambda x: x in cats)].Amount.sum()
 		budget_categories_df.Amount = budget_categories_df.Amount.fillna(0)
-		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: x not in all_cats or x == 'Other')].Amount.sum()
+		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')].Amount.sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
 		self.write_table(
@@ -664,7 +664,7 @@ class Writer:
 		'''
 		write a sheet for a summary of the whole year
 		'''
-		self.monthly_budget[13] = pd.concat(self.monthly_budget.values())
+		self.monthly_budget[13] = pd.concat(self.monthly_budget.values()).groupby('Category', sort=False).sum().reset_index()
 		self.write_month(
 			13,
 			pd.concat(self.data.values()) if len(self.data) > 0 else EMPTY.copy(),
