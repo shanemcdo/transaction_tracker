@@ -32,32 +32,12 @@ MONTHS = {
 	13: 'Whole Year'
 }
 MONTHS_SHORT = { key: value[:3] for key, value in MONTHS.items() }
-DEFAULT_INPUT_DIR = './in/'
-DEFAULT_OUTPUT_DIR = './out/'
+BUDGETS_DIR = './budgets/'
+RAW_TRANSACTIONS_DIR = './raw_transactions/'
+TRANSACTION_REPORTS_DIR = './transaction_reports/'
 # unix glob format
-INPUT_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
+RAW_TRANSACTION_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
 YEAR = 2024
-# TODO: change if budget gets adjusted
-# vestigial rn
-BUDGET_PER_MONTH = { i: 1000.00 for i in range(1, 13) }
-BUDGET_PER_MONTH[13] = sum(BUDGET_PER_MONTH.values())
-CATEGORY_BUDGET = {
-	'Rent': 2300.0,
-	'Investing': 500.0,
-	'Fuel': 150.0,
-	'Utilities': 190.0,
-	'Groceries': 500.0,
-	'Eating Out': 300.0,
-	'Other': 200.0,
-}
-CATEGORY_BUDGET_DF_PER_MONTH = { i: pd.DataFrame({
-	'Category': CATEGORY_BUDGET.keys(),
-	'Expected': CATEGORY_BUDGET.values(),
-}) for i in range(1, 13) }
-CATEGORY_BUDGET_DF_PER_MONTH[13] = pd.DataFrame({
-	'Category': CATEGORY_BUDGET.keys(),
-	'Expected': list(map(lambda x: x * 12, CATEGORY_BUDGET.values()))
-})
 EMPTY = pd.DataFrame({
 	'Date': [],
 	'Category': [],
@@ -111,7 +91,7 @@ class Writer:
 			}),
 		}
 		self.data = {}
-		self.carry_over = {}
+		self.monthly_budget = {}
 		self.reset_balances()
 		self.reset_style_count()
 
@@ -143,18 +123,27 @@ class Writer:
 		return result
 
 	@staticmethod
+	def get_budget_df(month: int) -> str:
+		df = pd.read_json(
+			os.path.join(BUDGETS_DIR, f'{YEAR}{month:02d}budget.json'),
+			orient='index'
+		).reset_index()
+		df.columns = ['Category', 'Expected']
+		return df
+
+	@staticmethod
 	def get_csv_filename_from_month(month: str) -> str:
-		glob_pattern = INPUT_FILENAME_FORMAT.format(month, YEAR)
+		glob_pattern = RAW_TRANSACTION_FILENAME_FORMAT.format(month, YEAR)
 		files = sorted(glob(
 				glob_pattern,
-				root_dir = DEFAULT_INPUT_DIR
+				root_dir = RAW_TRANSACTIONS_DIR
 			),
 			# make the order accurate
 			key = lambda x: x if '(' in x else x.replace('.csv', ' (0).csv')
 		)
 		if len(files) < 1:
 			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
-		return os.path.join(DEFAULT_INPUT_DIR, files[-1])
+		return os.path.join(RAW_TRANSACTIONS_DIR, files[-1])
 
 	@staticmethod
 	def parse_note(note: str, sep: str = '|') -> (str, float):
@@ -191,12 +180,12 @@ class Writer:
 		data.Amount *= -1
 		data = data[data.Category != 'Carry Over']
 		data.Date = data.Date.apply(parse_date)
-		print(data)
 		tuple_col = data.Note.apply(self.parse_note)
 		data.Note = tuple_col.apply(lambda x: x[0])
 		data['CashBack %'] = tuple_col.apply(lambda x: x[1])
 		data['CashBack Reward'] = data.Amount * data['CashBack %']
 		self.data[month] = data.copy()
+		self.monthly_budget[month] = self.get_budget_df(month)
 		return data
 
 	@staticmethod
@@ -474,8 +463,6 @@ class Writer:
 		write_transaction_table(all_expenses, 'All Expenses')
 		self.go_to_next()
 		# Total budget / carryover / remaining
-		prev_carry_over = self.carry_over.get(month - 1, 0)
-		self.carry_over[month] = BUDGET_PER_MONTH[month] + prev_carry_over - default_transactions.Amount.sum()
 		income_sum = default_income_transactions.Amount.sum()
 		expenses_sum = default_transactions.Amount.sum()
 		budget_info = pd.DataFrame([
@@ -499,12 +486,20 @@ class Writer:
 			index = 'Category',
 			**pivot_kwargs
 		).reset_index()
-		budget_categories_df = CATEGORY_BUDGET_DF_PER_MONTH[month].join(
+		budget_categories_df = self.monthly_budget[month].join(
 			pivot[['Category', 'Amount']].set_index('Category'),
 			on='Category',
 		)
+		all_cats = set()
+		for cat in budget_categories_df.Category:
+			if '&' not in cat:
+				all_cats.add(cat)
+				continue
+			cats = set(map(lambda x: x.strip(), cat.split('&')))
+			all_cats.update(cats)
+			budget_categories_df.loc[budget_categories_df.Category == cat, 'Amount'] = pivot[pivot.Category.map(lambda x: x in cats)].Amount.sum()
 		budget_categories_df.Amount = budget_categories_df.Amount.fillna(0)
-		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot.loc[pivot.Category.map(lambda x: x not in list(CATEGORY_BUDGET_DF_PER_MONTH[month].Category) or x == 'Other'), 'Amount'].sum()
+		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: x not in all_cats or x == 'Other')].Amount.sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
 		self.write_table(
@@ -662,13 +657,14 @@ class Writer:
 			data = self.read_month(month)
 			if not data.empty:
 				self.write_month(month, data)
-		except FileNotFoundError:
-			pass
+		except FileNotFoundError as e:
+			print(f'Couldn \'t find file for month {month}. Continuing')
 
 	def write_summary(self):
 		'''
 		write a sheet for a summary of the whole year
 		'''
+		self.monthly_budget[13] = pd.concat(self.monthly_budget.values())
 		self.write_month(
 			13,
 			pd.concat(self.data.values()) if len(self.data) > 0 else EMPTY.copy(),
@@ -701,8 +697,8 @@ def main():
 	datestring = now.strftime('%Y%m%d %H%M%S')
 	current_month = now.strftime('%B')
 	calendar.setfirstweekday(calendar.SUNDAY)
-	writer = Writer(os.path.join(DEFAULT_OUTPUT_DIR, f'transactions {datestring}.xlsx'))
-	for month in MONTHS.keys():
+	writer = Writer(os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx'))
+	for month in range(1,13):
 		writer.handle_month(month)
 	writer.reset_balances()
 	writer.write_summary()
