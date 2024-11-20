@@ -474,6 +474,7 @@ class Writer:
 				for account in accounts
 			)
 		])
+		self.write_title(sheet, 'Balances', len(budget_info.columns))
 		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
@@ -502,6 +503,7 @@ class Writer:
 		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')].Amount.sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
+		self.write_title(sheet, 'Budget Categories', len(budget_categories_df.columns))
 		self.write_table(
 			budget_categories_df,
 			sheet_name + 'BudgetCategoriesTable',
@@ -533,6 +535,7 @@ class Writer:
 			on='Category'
 		)
 		cat_table_name = sheet_name + 'CatPivot'
+		self.write_title(sheet, 'Categories Pivot', len(reimbursement_df.columns))
 		self.write_table(
 			reimbursement_df,
 			cat_table_name,
@@ -559,6 +562,7 @@ class Writer:
 		pivot = pivot.sort_values('Day')
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		day_table_name = sheet_name + 'DayPivot'
+		self.write_title(sheet, 'Day Pivot', len(pivot.columns))
 		self.write_table(
 			pivot,
 			day_table_name,
@@ -571,6 +575,7 @@ class Writer:
 			**pivot_kwargs
 		).reset_index()
 		cash_back_table_name = sheet_name + 'CashBackPivot'
+		self.write_title(sheet, 'Cashback Pivot', len(pivot.columns))
 		self.write_table(
 			pivot,
 			cash_back_table_name,
@@ -586,6 +591,7 @@ class Writer:
 			'Average cashback yield': [ cashback_sum / eligible_expenses_sum ],
 			'Average cashback yield excluding 0% cashback': [ cashback_sum / pivot[pivot['CashBack %'] != 0].Amount.sum() ],
 		})
+		self.write_title(sheet, 'Cashback Info', len(cashback_info.columns))
 		self.write_table(
 			cashback_info,
 			sheet_name + 'CashBackInfoTable',
@@ -611,6 +617,7 @@ class Writer:
 			pivot = pd.concat([pivot, pd.DataFrame([[i, 0, 0]], columns = pivot.columns)])
 		pivot = pivot.sort_values(by='Day Number')
 		day_number_table_name = sheet_name + 'DayNumberPivot'
+		self.write_title(sheet, 'Day Number Pivot', len(pivot.columns))
 		self.write_table(
 			pivot,
 			day_number_table_name,
