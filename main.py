@@ -6,6 +6,7 @@ from datetime import datetime
 import calendar
 import pandas as pd
 from glob import glob
+import re
 
 INCOME_CATEGORIES = [
 	'Cashback',
@@ -133,17 +134,33 @@ class Writer:
 
 	@staticmethod
 	def get_csv_filename_from_month(month: str) -> str:
+		# e.g. 'Transactions Nov 1, 2024 - Nov 30, 2024 (7).csv'
 		glob_pattern = RAW_TRANSACTION_FILENAME_FORMAT.format(month, YEAR)
-		files = sorted(glob(
+		files = sorted(map(
+			lambda x: x if '(' in x else x.replace('.csv', ' (0).csv'),
+			glob(
 				glob_pattern,
 				root_dir = RAW_TRANSACTIONS_DIR
-			),
-			# make the order accurate
-			key = lambda x: x if '(' in x else x.replace('.csv', ' (0).csv')
-		)
+			)
+		))
 		if len(files) < 1:
 			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
-		return os.path.join(RAW_TRANSACTIONS_DIR, files[-1])
+		elif len(files) == 1:
+			file = files[0]
+		else:
+			filename = files[-1]
+			biggest = -1, None
+			for file in files:
+				print('-' * 100)
+				print(file)
+				number = int(file[file.find('(') + 1 : file.find(')')])
+				print(number)
+				if number > biggest[0]:
+					biggest = number, file
+			file = biggest[1]
+			print('#' * 100)
+			print(file)
+		return os.path.join(RAW_TRANSACTIONS_DIR, file)
 
 	@staticmethod
 	def parse_note(note: str, sep: str = '|') -> (str, float):
