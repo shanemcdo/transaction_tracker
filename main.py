@@ -471,7 +471,7 @@ class Writer:
 			['Remaining', income_sum - expenses_sum],
 			*(
 				[f'{account} Balance', self.balances.get(account, 0)]
-				for account in accounts
+				for account in sorted(set((*accounts, *self.balances.keys())))
 			)
 		])
 		self.write_title(sheet, 'Balances', len(budget_info.columns))
