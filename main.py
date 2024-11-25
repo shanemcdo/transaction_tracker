@@ -168,11 +168,9 @@ class Writer:
 	def get_csv_filename_from_month(month: str) -> str:
 		# e.g. 'Transactions Nov 1, 2024 - Nov 30, 2024 (7).csv'
 		glob_pattern = RAW_TRANSACTION_FILENAME_FORMAT.format(month, YEAR)
-		files = sorted(glob(
-				glob_pattern,
-				root_dir = RAW_TRANSACTIONS_DIR
-			),
-			key = lambda x: x if '(' in x else x.replace('.csv', ' (0).csv')
+		files = glob(
+			glob_pattern,
+			root_dir = RAW_TRANSACTIONS_DIR
 		)
 		if len(files) < 1:
 			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
