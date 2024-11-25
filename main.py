@@ -750,7 +750,7 @@ def main():
 	calendar.setfirstweekday(calendar.SUNDAY)
 	writer = Writer(os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx'))
 	writer.get_balances()
-	for month in range(1,12):
+	for month in range(1,13):
 		writer.handle_month(month)
 	writer.reset_balances()
 	writer.write_summary()
