@@ -126,6 +126,15 @@ class Writer:
 		return result
 
 	def get_balances(self):
+		'''
+		get starting balances from json file
+
+		example file:
+		{
+			"Bigger purchases": 0,
+			"Emergency": 1000
+		}
+		'''
 		filename = f'starting_balances{YEAR}.json'
 		filepath = os.path.join(BALANCES_DIR, filename)
 		with open(filepath) as f:
@@ -133,6 +142,9 @@ class Writer:
 			self.reset_balances()
 
 	def reset_balances(self):
+		'''
+		set balances back to starting balances
+		'''
 		self.balances = self.starting_balances.copy()
 
 	@staticmethod
