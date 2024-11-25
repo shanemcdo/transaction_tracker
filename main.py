@@ -6,7 +6,7 @@ from datetime import datetime
 import calendar
 import pandas as pd
 from glob import glob
-import re
+import json
 
 INCOME_CATEGORIES = [
 	'Cashback',
@@ -34,6 +34,7 @@ MONTHS = {
 }
 MONTHS_SHORT = { key: value[:3] for key, value in MONTHS.items() }
 BUDGETS_DIR = './budgets/'
+BALANCES_DIR = './balances/'
 RAW_TRANSACTIONS_DIR = './raw_transactions/'
 TRANSACTION_REPORTS_DIR = './transaction_reports/'
 # unix glob format
@@ -93,7 +94,8 @@ class Writer:
 		}
 		self.data = {}
 		self.monthly_budget = {}
-		self.reset_balances()
+		self.starting_balances = {}
+		self.balances = {}
 		self.reset_style_count()
 
 	def reset_position(self):
@@ -122,6 +124,16 @@ class Writer:
 			if self.style_count > ENDING_STYLE_COUNT:
 				self.reset_style_count()
 		return result
+
+	def get_balances(self):
+		filename = f'starting_balances{YEAR}.json'
+		filepath = os.path.join(BALANCES_DIR, filename)
+		with open(filepath) as f:
+			self.starting_balances = json.load(f)
+			self.reset_balances()
+
+	def reset_balances(self):
+		self.balances = self.starting_balances.copy()
 
 	@staticmethod
 	def get_budget_df(month: int) -> str:
@@ -673,6 +685,8 @@ class Writer:
 		read and write data for the month
 		:month: int, 1-12 number representing the months
 		'''
+		if month < 1 or month > 12:
+			raise ValueError(f'month must be between 1-12 inclusive. actual = {month}')
 		try:
 			data = self.read_month(month)
 			if not data.empty:
@@ -696,6 +710,8 @@ class Writer:
 		Focus on a specific sheet when the workbook opens
 		:month: the sheet to focus on
 		'''
+		if month < 1 or month > 12:
+			raise ValueError(f'month must be between 1-12 inclusive. actual = {month}')
 		sheet = self.workbook.get_worksheet_by_name(MONTHS[month])
 		if sheet:
 			sheet.activate()
@@ -704,9 +720,6 @@ class Writer:
 		'''Make the window full screen'''
 		# just make it big enough to fill any screen
 		self.workbook.set_size(1000000, 1000000)
-
-	def reset_balances(self):
-		self.balances = {}
 
 	def save(self):
 		self.workbook.close()
@@ -718,7 +731,8 @@ def main():
 	current_month = now.strftime('%B')
 	calendar.setfirstweekday(calendar.SUNDAY)
 	writer = Writer(os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx'))
-	for month in range(1,13):
+	writer.get_balances()
+	for month in range(1,12):
 		writer.handle_month(month)
 	writer.reset_balances()
 	writer.write_summary()
