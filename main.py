@@ -149,11 +149,19 @@ class Writer:
 
 	@staticmethod
 	def get_budget_df(month: int) -> str:
-		df = pd.read_json(
-			os.path.join(BUDGETS_DIR, f'{YEAR}{month:02d}budget.json'),
-			orient='index'
-		).reset_index()
-		df.columns = ['Category', 'Expected']
+		'''
+		read the budget from the file
+
+		example file:
+		Category,Expected
+		Rent & Utilities,2490.0
+		Investing,500.0
+		Fuel,150.0
+		Groceries,500.0
+		Eating Out,300.0
+		Other,200.0
+		'''
+		df = pd.read_csv(os.path.join(BUDGETS_DIR, f'{YEAR}{month:02d}budget.csv'))
 		return df
 
 	@staticmethod
