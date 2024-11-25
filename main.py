@@ -136,13 +136,12 @@ class Writer:
 	def get_csv_filename_from_month(month: str) -> str:
 		# e.g. 'Transactions Nov 1, 2024 - Nov 30, 2024 (7).csv'
 		glob_pattern = RAW_TRANSACTION_FILENAME_FORMAT.format(month, YEAR)
-		files = sorted(map(
-			lambda x: x if '(' in x else x.replace('.csv', ' (0).csv'),
-			glob(
+		files = sorted(glob(
 				glob_pattern,
 				root_dir = RAW_TRANSACTIONS_DIR
-			)
-		))
+			),
+			key = lambda x: x if '(' in x else x.replace('.csv', ' (0).csv')
+		)
 		if len(files) < 1:
 			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
 		elif len(files) == 1:
@@ -151,15 +150,12 @@ class Writer:
 			filename = files[-1]
 			biggest = -1, None
 			for file in files:
-				print('-' * 100)
-				print(file)
+				if '(' not in file:
+					continue
 				number = int(file[file.find('(') + 1 : file.find(')')])
-				print(number)
 				if number > biggest[0]:
 					biggest = number, file
 			file = biggest[1]
-			print('#' * 100)
-			print(file)
 		return os.path.join(RAW_TRANSACTIONS_DIR, file)
 
 	@staticmethod
