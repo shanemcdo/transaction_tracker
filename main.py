@@ -698,7 +698,7 @@ class Writer:
 		)
 		self.go_to_next()
 		sheet.autofit()
-		if month != 14
+		if month != 14:
 			# month table
 			self.write_month_table(
 				all_expenses,
