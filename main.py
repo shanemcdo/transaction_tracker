@@ -478,7 +478,9 @@ class Writer:
 	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None, budget: dict = None):
 		'''
 		Create and write the sheet for a given month
-		:month: int 1-13, 1-12 for the months of the year and 13 for all of them
+		:month: int 1-14, 1-12 for the months of the year
+				13 for all of them
+				14 is a total summary regardless of year
 		:data: the dataframe contianing the transactions for the month
 		:sheet_name: optional, name to give the sheet created, if left None will be the month name
 		:budget: optional, budget to use instead of reading from self.monthly_budget
@@ -696,13 +698,14 @@ class Writer:
 		)
 		self.go_to_next()
 		sheet.autofit()
-		# month table
-		self.write_month_table(
-			all_expenses,
-			sheet,
-			month
-		)
-		self.go_to_next()
+		if month != 14
+			# month table
+			self.write_month_table(
+				all_expenses,
+				sheet,
+				month
+			)
+			self.go_to_next()
 		# charts
 		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
@@ -759,7 +762,7 @@ class Writer:
 		'''
 		budget = pd.concat(map(lambda x: x.get(13, pd.DataFrame()), self.monthly_budget.values())).groupby('Category', sort=False).sum().reset_index()
 		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), []))
-		self.write_month(13, data, 'SummaryAll', budget)
+		self.write_month(14, data, 'SummaryAll', budget)
 
 	def focus(self, month: int):
 		'''
