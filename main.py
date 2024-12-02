@@ -7,6 +7,7 @@ import calendar
 import pandas as pd
 from glob import glob
 import json
+from functools import reduce
 
 INCOME_CATEGORIES = [
 	'Cashback',
@@ -474,12 +475,13 @@ class Writer:
 		sheet.merge_range(self.row, self.column, self.row, self.column + width - 1, title, self.formats['merged'])
 		return self.row + 1, self.column + width
 
-	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None):
+	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None, budget: dict = None):
 		'''
 		Create and write the sheet for a given month
 		:month: int 1-13, 1-12 for the months of the year and 13 for all of them
 		:data: the dataframe contianing the transactions for the month
 		:sheet_name: optional, name to give the sheet created, if left None will be the month name
+		:budget: optional, budget to use instead of reading from self.monthly_budget
 		'''
 		self.reset_style_count()
 		self.reset_position()
@@ -554,7 +556,8 @@ class Writer:
 			index = 'Category',
 			**pivot_kwargs
 		).reset_index()
-		budget_categories_df = self.monthly_budget[self.year][month].join(
+		budget = self.monthly_budget[self.year][month] if budget is None else budget
+		budget_categories_df = budget.join(
 			pivot[['Category', 'Amount']].set_index('Category'),
 			on='Category',
 		)
@@ -740,12 +743,23 @@ class Writer:
 		'''
 		write a sheet for a summary of the whole year
 		'''
+		if len(self.data[self.year]) <= 0:
+			return
 		self.monthly_budget[self.year][13] = pd.concat(self.monthly_budget[self.year].values()).groupby('Category', sort=False).sum().reset_index()
 		self.write_month(
 			13,
-			pd.concat(self.data[self.year].values()) if len(self.data[self.year]) > 0 else EMPTY.copy(),
+			pd.concat(self.data[self.year].values()),
 			f'Summary{self.year}'
 		)
+
+	def write_summary_all(self):
+		'''
+		write a sheet for a summary of all recorded history
+		write_summary must be called for this to work correctly
+		'''
+		budget = pd.concat(map(lambda x: x.get(13, pd.DataFrame()), self.monthly_budget.values())).groupby('Category', sort=False).sum().reset_index()
+		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), []))
+		self.write_month(13, data, 'SummaryAll', budget)
 
 	def focus(self, month: int):
 		'''
@@ -794,6 +808,9 @@ def main():
 			writer.handle_month(month)
 		writer.reset_balances()
 		writer.write_summary()
+	writer.set_year(STARTING_YEAR)
+	writer.reset_balances()
+	writer.write_summary_all()
 	writer.focus(now.month)
 	writer.full_screen()
 	writer.save()
