@@ -39,7 +39,6 @@ RAW_TRANSACTIONS_DIR = './raw_transactions/'
 TRANSACTION_REPORTS_DIR = './transaction_reports/'
 # unix glob format
 RAW_TRANSACTION_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
-YEAR = 2024
 EMPTY = pd.DataFrame({
 	'Date': [],
 	'Category': [],
@@ -52,6 +51,9 @@ EMPTY = pd.DataFrame({
 STARTING_STYLE_COUNT = 9
 ENDING_STYLE_COUNT = 14
 DEFAULT_ACCOUNT = 'Monthly'
+
+def get_year() -> int:
+	return datetime.now().year
 
 def parse_date(date: str) -> datetime:
 	return datetime.strptime(date, '%m/%d/%Y')
@@ -97,6 +99,7 @@ class Writer:
 		self.starting_balances = {}
 		self.balances = {}
 		self.reset_style_count()
+		self.set_year(get_year())
 
 	def reset_position(self):
 		'''
@@ -135,7 +138,7 @@ class Writer:
 			"Emergency": 1000
 		}
 		'''
-		filename = f'starting_balances{YEAR}.json'
+		filename = f'starting_balances{self.year}.json'
 		filepath = os.path.join(BALANCES_DIR, filename)
 		with open(filepath) as f:
 			self.starting_balances = json.load(f)
@@ -147,8 +150,7 @@ class Writer:
 		'''
 		self.balances = self.starting_balances.copy()
 
-	@staticmethod
-	def get_budget_df(month: int) -> str:
+	def get_budget_df(self, month: int) -> str:
 		'''
 		read the budget from the file
 
@@ -161,13 +163,12 @@ class Writer:
 		Eating Out,300.0
 		Other,200.0
 		'''
-		df = pd.read_csv(os.path.join(BUDGETS_DIR, f'{YEAR}{month:02d}budget.csv'))
+		df = pd.read_csv(os.path.join(BUDGETS_DIR, f'{self.year}{month:02d}budget.csv'))
 		return df
 
-	@staticmethod
-	def get_csv_filename_from_month(month: str) -> str:
+	def get_csv_filename_from_month(self, month: str) -> str:
 		# e.g. 'Transactions Nov 1, 2024 - Nov 30, 2024 (7).csv'
-		glob_pattern = RAW_TRANSACTION_FILENAME_FORMAT.format(month, YEAR)
+		glob_pattern = RAW_TRANSACTION_FILENAME_FORMAT.format(month, self.year)
 		files = glob(
 			glob_pattern,
 			root_dir = RAW_TRANSACTIONS_DIR
@@ -417,10 +418,10 @@ class Writer:
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
 		cal = []
-		for row in calendar.monthcalendar(YEAR, month):
+		for row in calendar.monthcalendar(self.year, month):
 			cal.append(map(stringify_date, row))
 			cal.append((
-				data.loc[data.Date == f'{month:02d}/{cell:02d}/{YEAR:04d}', 'Amount'].sum()
+				data.loc[data.Date == f'{month:02d}/{cell:02d}/{self.year:04d}', 'Amount'].sum()
 				if cell != 0 else ''
 				for cell in row
 			))
@@ -741,6 +742,9 @@ class Writer:
 
 	def save(self):
 		self.workbook.close()
+
+	def set_year(self, year: int):
+		self.year = year
 
 def main():
 	'''Driver Code'''
