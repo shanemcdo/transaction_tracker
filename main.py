@@ -51,6 +51,7 @@ EMPTY = pd.DataFrame({
 STARTING_STYLE_COUNT = 9
 ENDING_STYLE_COUNT = 14
 DEFAULT_ACCOUNT = 'Monthly'
+STARTING_YEAR = 2024
 
 def get_year() -> int:
 	return datetime.now().year
@@ -467,7 +468,7 @@ class Writer:
 		column_percent_kwargs = { 'format': self.formats['percent'] }
 		pivot_kwargs = { 'values': [ 'Amount', 'CashBack Reward'], 'aggfunc': 'sum' }
 		pivot_columns_args = column_currency_kwargs, column_currency_kwargs
-		sheet_name = MONTHS[month] if sheet_name is None else sheet_name
+		sheet_name = self.get_sheetname(month) if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
 		# table of default transactions
 		def write_transaction_table(data: pd.DataFrame, table_name: str, include_cashback: bool = True):
@@ -721,7 +722,7 @@ class Writer:
 		self.write_month(
 			13,
 			pd.concat(self.data.values()) if len(self.data) > 0 else EMPTY.copy(),
-			'Summary'
+			f'Summary{self.year}'
 		)
 
 	def focus(self, month: int):
@@ -731,9 +732,16 @@ class Writer:
 		'''
 		if month < 1 or month > 12:
 			raise ValueError(f'month must be between 1-12 inclusive. actual = {month}')
-		sheet = self.workbook.get_worksheet_by_name(MONTHS[month])
+		sheet = self.workbook.get_worksheet_by_name(self.get_sheetname(month))
 		if sheet:
 			sheet.activate()
+
+	def get_sheetname(self, month: int):
+		'''
+		generate a sheet name based on month and year
+		:month: the month 1-12 to focus on
+		'''
+		return f'{MONTHS[month]}{self.year}'
 
 	def full_screen(self):
 		'''Make the window full screen'''
@@ -752,11 +760,13 @@ def main():
 	datestring = now.strftime('%Y%m%d %H%M%S')
 	calendar.setfirstweekday(calendar.SUNDAY)
 	writer = Writer(os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx'))
-	writer.get_balances()
-	for month in range(1,13):
-		writer.handle_month(month)
-	writer.reset_balances()
-	writer.write_summary()
+	for year in range(STARTING_YEAR, get_year() + 1):
+		writer.set_year(year)
+		writer.get_balances()
+		for month in range(1,13):
+			writer.handle_month(month)
+		writer.reset_balances()
+		writer.write_summary()
 	writer.focus(now.month)
 	writer.full_screen()
 	writer.save()
