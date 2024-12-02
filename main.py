@@ -730,8 +730,6 @@ class Writer:
 		Focus on a specific sheet when the workbook opens
 		:month: the sheet to focus on
 		'''
-		if month < 1 or month > 12:
-			raise ValueError(f'month must be between 1-12 inclusive. actual = {month}')
 		sheet = self.workbook.get_worksheet_by_name(self.get_sheetname(month))
 		if sheet:
 			sheet.activate()
@@ -741,6 +739,8 @@ class Writer:
 		generate a sheet name based on month and year
 		:month: the month 1-12 to focus on
 		'''
+		if month < 1 or month > 12:
+			raise ValueError(f'month must be between 1-12 inclusive. actual = {month}')
 		return f'{MONTHS[month]}{self.year}'
 
 	def full_screen(self):
