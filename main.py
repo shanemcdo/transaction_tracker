@@ -423,6 +423,8 @@ class Writer:
 				)
 		sheet.conditional_format(*before, start_row, start_col -1, {
 			'type': '3_color_scale',
+			'min_type': 'num',
+			'min_value': 0,
 			'min_color': '#63be7b',
 			'mid_color': '#ffeb84',
 			'max_color': '#f8696b',
