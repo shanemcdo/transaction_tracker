@@ -775,6 +775,15 @@ class Writer:
 		if sheet:
 			sheet.activate()
 
+	def hide(self, month: int):
+		'''
+		Hide a sheet based on the month number
+		:month: the month of the sheet to focus on 1-12
+		'''
+		sheet = self.workbook.get_worksheet_by_name(self.get_sheetname(month))
+		if sheet:
+			sheet.hide()
+
 	def get_sheetname(self, month: int):
 		'''
 		generate a sheet name based on month and year
@@ -811,6 +820,8 @@ def main():
 		writer.get_balances()
 		for month in range(1,13):
 			writer.handle_month(month)
+			if current_year - year > 1:
+				writer.hide(month)
 		writer.reset_balances()
 		writer.write_summary()
 	writer.set_year(STARTING_YEAR)
