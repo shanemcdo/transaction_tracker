@@ -750,7 +750,6 @@ def main():
 	'''Driver Code'''
 	now = datetime.now()
 	datestring = now.strftime('%Y%m%d %H%M%S')
-	current_month = now.strftime('%B')
 	calendar.setfirstweekday(calendar.SUNDAY)
 	writer = Writer(os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx'))
 	writer.get_balances()
