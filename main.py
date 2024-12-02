@@ -95,9 +95,31 @@ class Writer:
 				'border': 1
 			}),
 		}
+		# {
+		#   year: {
+		#     month: DF [ Date, Category, Amount, Note, Cashback %, Cashback reward ],
+		#     ...
+		#   }, ...
+		# }
 		self.data = {}
+		# {
+		#   year: {
+		#     month: DF [ Category, Expected ],
+		#     ...
+		#   }, ...
+		# }
 		self.monthly_budget = {}
+		# {
+		#   year: {
+		#     balance category: starting value,
+		#     ...
+		#   }, ...
+		# }
 		self.starting_balances = {}
+		# {
+		#   balance category: starting value,
+		#   ...
+		# }
 		self.balances = {}
 		self.reset_style_count()
 		self.set_year(get_year())
@@ -142,14 +164,14 @@ class Writer:
 		filename = f'starting_balances{self.year}.json'
 		filepath = os.path.join(BALANCES_DIR, filename)
 		with open(filepath) as f:
-			self.starting_balances = json.load(f)
+			self.starting_balances[self.year] = json.load(f)
 			self.reset_balances()
 
 	def reset_balances(self):
 		'''
 		set balances back to starting balances
 		'''
-		self.balances = self.starting_balances.copy()
+		self.balances = self.starting_balances[self.year].copy()
 
 	def get_budget_df(self, month: int) -> str:
 		'''
@@ -229,8 +251,8 @@ class Writer:
 		data.Note = tuple_col.apply(lambda x: x[0])
 		data['CashBack %'] = tuple_col.apply(lambda x: x[1])
 		data['CashBack Reward'] = data.Amount * data['CashBack %']
-		self.data[month] = data.copy()
-		self.monthly_budget[month] = self.get_budget_df(month)
+		self.data[self.year][month] = data.copy()
+		self.monthly_budget[self.year][month] = self.get_budget_df(month)
 		return data
 
 	@staticmethod
@@ -388,7 +410,7 @@ class Writer:
 		else:
 			col = start_col
 			for month in range(1, 13):
-				if month not in self.data:
+				if month not in self.data[self.year]:
 					continue
 				start_row, start_col = self.write_month_table_helper(
 					data,
@@ -532,7 +554,7 @@ class Writer:
 			index = 'Category',
 			**pivot_kwargs
 		).reset_index()
-		budget_categories_df = self.monthly_budget[month].join(
+		budget_categories_df = self.monthly_budget[self.year][month].join(
 			pivot[['Category', 'Amount']].set_index('Category'),
 			on='Category',
 		)
@@ -718,10 +740,10 @@ class Writer:
 		'''
 		write a sheet for a summary of the whole year
 		'''
-		self.monthly_budget[13] = pd.concat(self.monthly_budget.values()).groupby('Category', sort=False).sum().reset_index()
+		self.monthly_budget[self.year][13] = pd.concat(self.monthly_budget[self.year].values()).groupby('Category', sort=False).sum().reset_index()
 		self.write_month(
 			13,
-			pd.concat(self.data.values()) if len(self.data) > 0 else EMPTY.copy(),
+			pd.concat(self.data[self.year].values()) if len(self.data[self.year]) > 0 else EMPTY.copy(),
 			f'Summary{self.year}'
 		)
 
@@ -753,14 +775,19 @@ class Writer:
 
 	def set_year(self, year: int):
 		self.year = year
+		if year not in self.data:
+			self.data[year] = {}
+		if year not in self.monthly_budget:
+			self.monthly_budget[year] = {}
 
 def main():
 	'''Driver Code'''
 	now = datetime.now()
 	datestring = now.strftime('%Y%m%d %H%M%S')
 	calendar.setfirstweekday(calendar.SUNDAY)
+	current_year = get_year()
 	writer = Writer(os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx'))
-	for year in range(STARTING_YEAR, get_year() + 1):
+	for year in range(STARTING_YEAR, current_year + 1):
 		writer.set_year(year)
 		writer.get_balances()
 		for month in range(1,13):
