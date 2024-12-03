@@ -528,6 +528,7 @@ class Writer:
 		write_transaction_table(default_transactions, DEFAULT_ACCOUNT)
 		write_transaction_table(default_income_transactions, DEFAULT_ACCOUNT + ' Income', False)
 		accounts = data.loc[data.Account != DEFAULT_ACCOUNT, 'Account'].sort_values().unique()
+		pre_balances_sum = sum(self.balances.values())
 		for account in accounts:
 			transactions = data.loc[data.Account == account, data_headers]
 			transactions.Amount *= -1
@@ -535,13 +536,19 @@ class Writer:
 			self.balances[account] = self.balances.get(account, 0) + transactions.Amount.sum()
 		write_transaction_table(all_expenses, 'All Expenses')
 		self.go_to_next()
+		self.reset_style_count()
 		# Total budget / carryover / remaining
 		income_sum = default_income_transactions.Amount.sum()
 		expenses_sum = default_transactions.Amount.sum()
+		income_and_balances_sum = income_sum + pre_balances_sum
+		all_expenses_sum = all_expenses.Amount.sum()
 		budget_info = pd.DataFrame([
 			['Monthly Income', income_sum],
 			['Monthly Expenses', expenses_sum],
 			['Remaining', income_sum - expenses_sum],
+			['Income + Balances', income_and_balances_sum],
+			['All Expenses', all_expenses_sum],
+			['Remaining', income_and_balances_sum - all_expenses_sum],
 			*(
 				[f'{account} Balance', self.balances.get(account, 0)]
 				for account in sorted(set((*accounts, *self.balances.keys())))
