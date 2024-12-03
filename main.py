@@ -827,7 +827,7 @@ def main():
 		writer.get_balances()
 		for month in range(1,13):
 			writer.handle_month(month)
-			if current_year - year > 1:
+			if current_year != year:
 				writer.hide(month)
 		writer.reset_balances()
 		writer.write_summary()
