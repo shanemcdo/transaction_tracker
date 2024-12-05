@@ -164,9 +164,12 @@ class Writer:
 		'''
 		filename = f'starting_balances{self.year}.json'
 		filepath = os.path.join(BALANCES_DIR, filename)
-		with open(filepath) as f:
-			self.starting_balances[self.year] = json.load(f)
-			self.reset_balances()
+		try:
+			with open(filepath) as f:
+				self.starting_balances[self.year] = json.load(f)
+				self.reset_balances()
+		except FileNotFoundError:
+			pass
 
 	def reset_balances(self):
 		'''
