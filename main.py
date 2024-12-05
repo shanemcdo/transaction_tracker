@@ -742,10 +742,11 @@ class Writer:
 					show_value
 				)
 
-	def handle_month(self, month: int):
+	def handle_month(self, month: int) -> bool:
 		'''
 		read and write data for the month
 		:month: int, 1-12 number representing the months
+		:returns: true if it succeeds and false if it fails
 		'''
 		if month < 1 or month > 12:
 			raise ValueError(f'month must be between 1-12 inclusive. actual = {month}')
@@ -755,6 +756,8 @@ class Writer:
 				self.write_month(month, data)
 		except FileNotFoundError as e:
 			print(f'Couldn \'t find file for month {month}. Continuing')
+			return False
+		return True
 
 	def write_summary(self):
 		'''
@@ -830,12 +833,14 @@ def main():
 	for year in range(STARTING_YEAR, current_year + 1):
 		writer.set_year(year)
 		writer.get_balances()
+		any_success = False
 		for month in range(1,13):
-			writer.handle_month(month)
+			any_success |= writer.handle_month(month)
 			if current_year != year:
 				writer.hide(month)
-		writer.reset_balances()
-		writer.write_summary()
+		if any_success:
+			writer.reset_balances()
+			writer.write_summary()
 	writer.set_year(STARTING_YEAR)
 	writer.reset_balances()
 	writer.write_summary_all()
