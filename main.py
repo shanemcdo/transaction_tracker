@@ -492,7 +492,7 @@ class Writer:
 		'''
 		self.reset_style_count()
 		self.reset_position()
-		data_headers = data.columns[data.columns != 'Account'].values
+		data_headers = data.columns
 		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
 		column_total_kwargs = { 'total_string': 'Total' }
 		column_date_kwargs = { 'format': self.formats['date'] }
@@ -515,8 +515,9 @@ class Writer:
 					{},
 					column_currency_kwargs,
 					{},
+					{},
 					column_percent_kwargs,
-					column_currency_kwargs
+					column_currency_kwargs,
 				),
 				total=True
 			)
@@ -548,10 +549,11 @@ class Writer:
 		budget_info = pd.DataFrame([
 			['Monthly Income', income_sum],
 			['Monthly Expenses', expenses_sum],
-			['Remaining', income_sum - expenses_sum],
+			['Monthly Expenses - transfers', expenses_sum - default_transactions[default_transactions.Category == 'Transfer'].Amount.sum()],
+			['Monthly Income - Monthly Expenses', income_sum - expenses_sum],
 			['Income + Balances', income_and_balances_sum],
 			['All Expenses', all_expenses_sum],
-			['Remaining', income_and_balances_sum - all_expenses_sum],
+			['Income + Balances - all expenses', income_and_balances_sum - all_expenses_sum],
 			*(
 				[f'{account} Balance', self.balances.get(account, 0)]
 				for account in sorted(set((*accounts, *self.balances.keys())))
