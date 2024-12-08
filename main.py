@@ -589,10 +589,12 @@ class Writer:
 		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')].Amount.sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
+		budget_categories_table_name = sheet_name + 'BudgetCategoriesTable'
 		self.write_title(sheet, 'Budget Categories', len(budget_categories_df.columns))
+		before_row = self.row
 		self.write_table(
 			budget_categories_df,
-			sheet_name + 'BudgetCategoriesTable',
+			budget_categories_table_name,
 			sheet,
 			self.columns(
 				budget_categories_df,
@@ -604,6 +606,18 @@ class Writer:
 			),
 			True
 		)
+		sheet.conditional_format(before_row + 1, self.column + 4, self.row - 1, self.column + 4, {
+			'type': '3_color_scale',
+			'min_color': '#63be7b',
+			'min_type': 'num',
+			'min_value': 0,
+			'mid_color': '#ffeb84',
+			'mid_type': 'num',
+			'mid_value': 0.5,
+			'max_color': '#f8696b',
+			'max_type': 'num',
+			'max_value': 1,
+		})
 		# category pivot & reimbursement/refund table
 		pivot = all_expenses.pivot_table(
 			index = 'Category',
