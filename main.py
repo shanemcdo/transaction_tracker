@@ -551,9 +551,10 @@ class Writer:
 			['Monthly Expenses', expenses_sum],
 			['Monthly Expenses - transfers', expenses_sum - default_transactions[default_transactions.Category == 'Transfer'].Amount.sum()],
 			['Monthly Income - Monthly Expenses', income_sum - expenses_sum],
+			['Monthly Income - All Expenses', income_sum - all_expenses_sum],
 			['Income + Balances', income_and_balances_sum],
 			['All Expenses', all_expenses_sum],
-			['Income + Balances - all expenses', income_and_balances_sum - all_expenses_sum],
+			['Income + Balances - All Expenses', income_and_balances_sum - all_expenses_sum],
 			*(
 				[f'{account} Balance', self.balances.get(account, 0)]
 				for account in sorted(set((*accounts, *self.balances.keys())))
@@ -633,7 +634,10 @@ class Writer:
 		}).join(
 			pivot[['Category', 'Amount', 'CashBack Reward']].set_index('Category'),
 			on='Category'
-		)
+		).join(
+			all_expenses.Category.value_counts(),
+			on='Category'
+		).rename(columns={'count': 'Transaction Count'})
 		cat_table_name = sheet_name + 'CatPivot'
 		self.write_title(sheet, 'Categories Pivot', len(reimbursement_df.columns))
 		self.write_table(
@@ -647,6 +651,7 @@ class Writer:
 				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
+				{},
 			),
 			True
 		)
