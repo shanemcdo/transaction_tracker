@@ -498,7 +498,7 @@ class Writer:
 		column_date_kwargs = { 'format': self.formats['date'] }
 		column_percent_kwargs = { 'format': self.formats['percent'] }
 		pivot_kwargs = { 'values': [ 'Amount', 'CashBack Reward'], 'aggfunc': 'sum' }
-		pivot_columns_args = column_currency_kwargs, column_currency_kwargs
+		pivot_columns_args = column_currency_kwargs, column_currency_kwargs, {}
 		sheet_name = self.get_sheetname(month) if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
 		# table of default transactions
@@ -664,7 +664,10 @@ class Writer:
 		for day in [ '0Sun', '1Mon', '2Tue', '3Wed', '4Thu', '5Fri', '6Sat']:
 			if day not in pivot['Day'].values:
 				pivot = pd.concat([pivot, pd.DataFrame([[day, 0, 0]], columns=pivot.columns)])
-		pivot = pivot.sort_values('Day')
+		pivot = pivot.sort_values('Day').join(
+			all_expenses.Day.value_counts(),
+			on='Day'
+		).rename(columns={'count': 'Transaction Count'})
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		day_table_name = sheet_name + 'DayPivot'
 		self.write_title(sheet, 'Day Pivot', len(pivot.columns))
@@ -678,7 +681,10 @@ class Writer:
 		pivot = all_expenses.pivot_table(
 			index = 'CashBack %',
 			**pivot_kwargs
-		).reset_index()
+		).reset_index().join(
+			all_expenses['CashBack %'].value_counts(),
+			on='CashBack %'
+		).rename(columns={'count': 'Transaction Count'})
 		cash_back_table_name = sheet_name + 'CashBackPivot'
 		self.write_title(sheet, 'Cashback Pivot', len(pivot.columns))
 		self.write_table(
@@ -721,6 +727,7 @@ class Writer:
 				continue
 			pivot = pd.concat([pivot, pd.DataFrame([[i, 0, 0]], columns = pivot.columns)])
 		pivot = pivot.sort_values(by='Day Number')
+
 		day_number_table_name = sheet_name + 'DayNumberPivot'
 		self.write_title(sheet, 'Day Number Pivot', len(pivot.columns))
 		self.write_table(
