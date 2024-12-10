@@ -750,7 +750,7 @@ class Writer:
 			)
 			self.go_to_next()
 		# charts
-		for i, value_field in enumerate(('Amount', 'CashBack Reward')):
+		for i, value_field in enumerate(('Amount', 'Transaction Count', 'CashBack Reward' )):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
 				('Category', cat_table_name, 'pie', True),
 				('Day', day_table_name, 'column', True),
