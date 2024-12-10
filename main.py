@@ -726,7 +726,10 @@ class Writer:
 			if any(pivot['Day Number'] == i):
 				continue
 			pivot = pd.concat([pivot, pd.DataFrame([[i, 0, 0]], columns = pivot.columns)])
-		pivot = pivot.sort_values(by='Day Number')
+		pivot = pivot.sort_values(by='Day Number').join(
+			all_expenses_copy['Day Number'].value_counts(),
+			on='Day Number'
+		).rename(columns={'count': 'Transaction Count'}).fillna(0)
 
 		day_number_table_name = sheet_name + 'DayNumberPivot'
 		self.write_title(sheet, 'Day Number Pivot', len(pivot.columns))
