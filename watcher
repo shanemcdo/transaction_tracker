@@ -1,0 +1,18 @@
+#!/bin/sh
+
+last_update=''
+while true; do
+	most_recent="`ls -t raw_transactions | head -1`"
+	if [ "$most_recent" != "$last_update" ]; then
+		last_update="$most_recent"
+		date
+		echo "Updating last_update"
+		echo "Running run script"
+		./run >/dev/null 2>&1
+		if [ "$?" -ne 0 ]; then
+			echo "run script failed"
+			exit 1
+		fi
+	fi
+	sleep 60
+done
