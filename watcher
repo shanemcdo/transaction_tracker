@@ -8,9 +8,9 @@ while true; do
 	if [ "$most_recent" != "$last_update" ]; then
 		last_update="$most_recent"
 		date
-		echo "Updating last_update"
+		echo "Updating last_update: '$last_update'"
 		echo "Running run script"
-		./run >/dev/null 2>&1
+		./run >output.txt 2>&1
 		if [ "$?" -ne 0 ]; then
 			echo "run script failed"
 			exit 1
