@@ -2,6 +2,7 @@
 # The purpose of this script is to continually run and to
 # create a new generated sheet when new raw input is detected
 
+trap "echo 'Exiting Watcher'; exit;" SIGINT SIGTERM
 last_update=''
 while true; do
 	most_recent="`ls -t raw_transactions | head -1`"
