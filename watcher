@@ -1,4 +1,6 @@
 #!/bin/sh
+# The purpose of this script is to continually run and to
+# create a new generated sheet when new raw input is detected
 
 last_update=''
 while true; do
