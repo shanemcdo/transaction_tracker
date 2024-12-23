@@ -555,18 +555,40 @@ class Writer:
 			['Income + Balances', income_and_balances_sum],
 			['All Expenses', all_expenses_sum],
 			['Income + Balances - All Expenses', income_and_balances_sum - all_expenses_sum],
-			*(
-				[f'{account} Balance', self.balances.get(account, 0)]
-				for account in sorted(set((*accounts, *self.balances.keys())))
-			)
 		])
-		self.write_title(sheet, 'Balances', len(budget_info.columns))
+		self.write_title(sheet, 'Overall Budget', len(budget_info.columns))
 		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
 			sheet,
 			[{}, column_currency_kwargs],
 			headers = False
+		)
+		# balances
+		balances_df = pd.DataFrame(
+			([
+				f'{account}',
+				self.balances.get(account, 0),
+				-data[data.Account == account].Amount.sum(),
+				data[(data.Account == account) & (data.Amount > 0)].Amount.sum(),
+				-data[(data.Account == account) & (data.Amount < 0)].Amount.sum()
+			] for account in sorted(set((*accounts, *self.balances.keys())))),
+			columns = ['Account', 'New Balance', 'Net Change', 'Spent', 'Saved']
+		)
+		self.write_title(sheet, 'Balances', len(balances_df.columns))
+		self.write_table(
+			balances_df,
+			sheet_name + 'BalancesTable',
+			sheet,
+			self.columns(
+				balances_df,
+				{},
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_currency_kwargs,
+			),
+			total = True
 		)
 		# Budget Categories Table
 		pivot = default_transactions.pivot_table(
