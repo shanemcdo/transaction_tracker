@@ -507,7 +507,7 @@ class Writer:
 			self.write_title(sheet, table_name, len(data.columns))
 			self.write_table(
 				data if include_cashback else data[['Date', 'Category', 'Amount', 'Note']],
-				sheet_name + table_name.replace(' ', '_') + 'Table',
+				sheet_name + table_name.replace(' ', '_').replace('&', '') + 'Table',
 				sheet,
 				self.columns(
 					default_transactions,
