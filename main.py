@@ -152,6 +152,12 @@ class Writer:
 				self.reset_style_count()
 		return result
 
+	def set_starting_balances(self):
+		'''
+		set the starting balances of the year
+		'''
+		self.starting_balances[self.year] = self.balances.copy()
+
 	def get_balances(self):
 		'''
 		get starting balances from json file
@@ -538,6 +544,7 @@ class Writer:
 			transactions.Amount *= -1
 			write_transaction_table(transactions, account)
 			self.balances[account] = self.balances.get(account, 0) + transactions.Amount.sum()
+		self.set_starting_balances()
 		write_transaction_table(all_expenses, 'All Expenses')
 		self.go_to_next()
 		self.reset_style_count()
@@ -575,6 +582,12 @@ class Writer:
 			] for account in sorted(set((*accounts, *self.balances.keys())))),
 			columns = ['Account', 'New Balance', 'Net Change', 'Spent', 'Saved']
 		)
+		balances_df = balances_df[
+			(abs(balances_df['New Balance']) >= 0.001) |
+			(abs(balances_df['Net Change']) >= 0.001) |
+			(abs(balances_df['Spent']) >= 0.001) |
+			(abs(balances_df['Saved']) >= 0.001)
+		]
 		self.write_title(sheet, 'Balances', len(balances_df.columns))
 		self.write_table(
 			balances_df,
@@ -689,10 +702,12 @@ class Writer:
 		pivot = pivot.sort_values('Day').join(
 			all_expenses.Day.value_counts(),
 			on='Day'
-		).rename(columns={'count': 'Transaction Count'})
+		).rename(columns={'count': 'Transaction Count'}).fillna(0)
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		day_table_name = sheet_name + 'DayPivot'
 		self.write_title(sheet, 'Day Pivot', len(pivot.columns))
+		print(pivot)
+		# replace nan with zero here
 		self.write_table(
 			pivot,
 			day_table_name,
@@ -837,6 +852,7 @@ class Writer:
 		Focus on a specific sheet when the workbook opens
 		:month: the sheet to focus on
 		'''
+		print(self.get_sheetname(month))
 		sheet = self.workbook.get_worksheet_by_name(self.get_sheetname(month))
 		if sheet:
 			sheet.activate()
@@ -895,6 +911,7 @@ def main():
 	writer.set_year(STARTING_YEAR)
 	writer.reset_balances()
 	writer.write_summary_all()
+	writer.set_year(current_year)
 	writer.focus(now.month)
 	writer.full_screen()
 	writer.save()
