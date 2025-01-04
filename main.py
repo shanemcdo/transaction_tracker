@@ -499,7 +499,8 @@ class Writer:
 		self.reset_style_count()
 		self.reset_position()
 		data_headers = data.columns
-		column_currency_kwargs = { 'format': self.formats['currency'], 'total_function': 'sum' }
+		column_total_sum_kwargs = { 'total_function': 'sum' }
+		column_currency_kwargs = { 'format': self.formats['currency'], **column_total_sum_kwargs }
 		column_total_kwargs = { 'total_string': 'Total' }
 		column_date_kwargs = { 'format': self.formats['date'] }
 		column_percent_kwargs = { 'format': self.formats['percent'] }
@@ -578,9 +579,10 @@ class Writer:
 				self.balances.get(account, 0),
 				-data[data.Account == account].Amount.sum(),
 				data[(data.Account == account) & (data.Amount > 0)].Amount.sum(),
-				-data[(data.Account == account) & (data.Amount < 0)].Amount.sum()
+				-data[(data.Account == account) & (data.Amount < 0)].Amount.sum(),
+				len(data[data.Account == account].Amount),
 			] for account in sorted(set((*accounts, *self.balances.keys())))),
-			columns = ['Account', 'New Balance', 'Net Change', 'Spent', 'Saved']
+			columns = ['Account', 'New Balance', 'Net Change', 'Spent', 'Saved', 'Transaction Count']
 		)
 		balances_df = balances_df[
 			(abs(balances_df['New Balance']) >= 0.001) |
@@ -600,6 +602,7 @@ class Writer:
 				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
+				column_total_sum_kwargs,
 			),
 			total = True
 		)
@@ -607,10 +610,13 @@ class Writer:
 		pivot = default_transactions.pivot_table(
 			index = 'Category',
 			**pivot_kwargs
-		).reset_index()
+		).reset_index().join(
+			all_expenses.Category.value_counts(),
+			on='Category'
+		).rename(columns={'count': 'Transaction Count'})
 		budget = self.monthly_budget[self.year][month] if budget is None else budget
 		budget_categories_df = budget.join(
-			pivot[['Category', 'Amount']].set_index('Category'),
+			pivot[['Category', 'Amount', 'Transaction Count']].set_index('Category'),
 			on='Category',
 		)
 		all_cats = set()
@@ -621,10 +627,14 @@ class Writer:
 			cats = set(map(lambda x: x.strip(), cat.split('&')))
 			all_cats.update(cats)
 			budget_categories_df.loc[budget_categories_df.Category == cat, 'Amount'] = pivot[pivot.Category.map(lambda x: x in cats)].Amount.sum()
+			budget_categories_df.loc[budget_categories_df.Category == cat, 'Transaction Count'] = pivot[pivot.Category.map(lambda x: x in cats)]['Transaction Count'].sum()
 		budget_categories_df.Amount = budget_categories_df.Amount.fillna(0)
+		budget_categories_df['Transaction Count'] = budget_categories_df['Transaction Count'].fillna(0)
 		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')].Amount.sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
+		transaction_count_col = budget_categories_df.pop('Transaction Count')
+		budget_categories_df.insert(len(budget_categories_df.columns), 'Transaction Count', transaction_count_col)
 		budget_categories_table_name = sheet_name + 'BudgetCategoriesTable'
 		self.write_title(sheet, 'Budget Categories', len(budget_categories_df.columns))
 		before_row = self.row
@@ -639,6 +649,7 @@ class Writer:
 				column_currency_kwargs,
 				column_currency_kwargs,
 				column_percent_kwargs,
+				column_total_sum_kwargs,
 			),
 			True
 		)
@@ -686,7 +697,7 @@ class Writer:
 				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
-				{},
+				column_total_sum_kwargs,
 			),
 			True
 		)
