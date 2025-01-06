@@ -631,6 +631,7 @@ class Writer:
 		budget_categories_df.Amount = budget_categories_df.Amount.fillna(0)
 		budget_categories_df['Transaction Count'] = budget_categories_df['Transaction Count'].fillna(0)
 		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')].Amount.sum()
+		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Transaction Count'] = len(pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')]['Transaction Count'])
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
 		transaction_count_col = budget_categories_df.pop('Transaction Count')
