@@ -156,7 +156,7 @@ class Writer:
 		'''
 		set the starting balances of the year
 		'''
-		self.starting_balances[self.year] = self.balances.copy()
+		self.starting_balances[self.year + 1] = self.balances.copy()
 
 	def get_balances(self):
 		'''
