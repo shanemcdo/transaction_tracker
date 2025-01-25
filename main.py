@@ -702,6 +702,23 @@ class Writer:
 			),
 			True
 		)
+		# Account Pivot
+		pivot = all_expenses.pivot_table(
+			index = 'Account',
+			**pivot_kwargs
+		).reset_index()
+		pivot = pivot.sort_values('Account').join(
+			all_expenses.Account.value_counts(),
+			on='Account'
+		).rename(columns={'count': 'Transaction Count'}).fillna(0)
+		self.write_title(sheet, 'Account Pivot', len(pivot.columns))
+		account_table_name = sheet_name + 'AccountPivot'
+		self.write_table(
+			pivot,
+			account_table_name,
+			sheet,
+			self.columns(pivot, {}, *pivot_columns_args),
+		)
 		# day pivot
 		all_expenses['Day'] = all_expenses['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = all_expenses.pivot_table(
