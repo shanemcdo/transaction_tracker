@@ -709,7 +709,7 @@ class Writer:
 			**pivot_kwargs
 		).reset_index()
 		account_list = sorted(all_expenses.Account.unique())
-		spent_list =      [ (all_expenses[(all_expenses.Account == account) & (all_expenses.Amount > 0) & (all_expenses.Category != 'Transfer')]).Amount.sum() for account in account_list ]
+		spent_list =      [ (all_expenses[(all_expenses.Account == account) & (all_expenses.Amount > 0)]).Amount.sum() for account in account_list ]
 		reimbursed_list = [ (all_expenses[(all_expenses.Account == account) & (all_expenses.Amount < 0)]).Amount.sum() for account in account_list ]
 		reimbursement_df = pd.DataFrame({
 			'Account': account_list,
@@ -730,7 +730,7 @@ class Writer:
 		reimbursement_df['Net Change'] = reimbursement_df.Amount + reimbursement_df.Saved
 		reimbursement_df.Saved *= -1
 		# reimbursement_df.loc[reimbursement_df.Account == DEFAULT_ACCOUNT, 'Account'] = DEFAULT_ACCOUNT + ' (excluding transfers)'
-		self.write_title(sheet, 'Account Pivot (transfers excluded from spending)', len(reimbursement_df.columns))
+		self.write_title(sheet, 'Account Pivot', len(reimbursement_df.columns))
 		account_table_name = sheet_name + 'AccountPivot'
 		self.write_table(
 			reimbursement_df,
