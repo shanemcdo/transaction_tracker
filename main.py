@@ -685,6 +685,7 @@ class Writer:
 			all_expenses.Category.value_counts(),
 			on='Category'
 		).rename(columns={'count': 'Transaction Count'})
+		reimbursement_df['Reimbursed/Refunded'] *= -1
 		cat_table_name = sheet_name + 'CatPivot'
 		self.write_title(sheet, 'Categories Pivot', len(reimbursement_df.columns))
 		self.write_table(
@@ -707,17 +708,44 @@ class Writer:
 			index = 'Account',
 			**pivot_kwargs
 		).reset_index()
-		pivot = pivot.sort_values('Account').join(
+		account_list = sorted(all_expenses.Account.unique())
+		spent_list =      [ (all_expenses[(all_expenses.Account == account) & (all_expenses.Amount > 0) & (all_expenses.Category != 'Transfer')]).Amount.sum() for account in account_list ]
+		reimbursed_list = [ (all_expenses[(all_expenses.Account == account) & (all_expenses.Amount < 0)]).Amount.sum() for account in account_list ]
+		reimbursement_df = pd.DataFrame({
+			'Account': account_list,
+			'Spent': spent_list,
+			'Reimbursed/Refunded': reimbursed_list,
+		}).join(
+			pivot[['Account', 'Amount', 'CashBack Reward']].set_index('Account'),
+			on='Account'
+		).join(
 			all_expenses.Account.value_counts(),
 			on='Account'
-		).rename(columns={'count': 'Transaction Count'}).fillna(0)
-		self.write_title(sheet, 'Account Pivot', len(pivot.columns))
+		).rename(columns={
+			'count': 'Transaction Count',
+			'Spent': 'Amount',
+			'Amount': 'Net Change',
+			'Reimbursed/Refunded': 'Saved'
+		})
+		reimbursement_df['Net Change'] = reimbursement_df.Amount + reimbursement_df.Saved
+		reimbursement_df.Saved *= -1
+		# reimbursement_df.loc[reimbursement_df.Account == DEFAULT_ACCOUNT, 'Account'] = DEFAULT_ACCOUNT + ' (excluding transfers)'
+		self.write_title(sheet, 'Account Pivot (transfers excluded from spending)', len(reimbursement_df.columns))
 		account_table_name = sheet_name + 'AccountPivot'
 		self.write_table(
-			pivot,
+			reimbursement_df,
 			account_table_name,
 			sheet,
-			self.columns(pivot, {}, *pivot_columns_args),
+			self.columns(
+				reimbursement_df,
+				{},
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_total_sum_kwargs,
+			),
+			True
 		)
 		# day pivot
 		all_expenses['Day'] = all_expenses['Date'].apply(lambda x: x.strftime('%w%a'))
@@ -819,6 +847,7 @@ class Writer:
 		for i, value_field in enumerate(('Amount', 'Transaction Count', 'CashBack Reward' )):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
 				('Category', cat_table_name, 'pie', True),
+				('Account', account_table_name, 'pie', True),
 				('Day', day_table_name, 'column', True),
 				('CashBack %', cash_back_table_name, 'pie', True),
 				('Day Number', day_number_table_name, 'column', False)
