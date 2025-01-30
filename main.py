@@ -710,8 +710,8 @@ class Writer:
 			**pivot_kwargs
 		).reset_index()
 		account_list = sorted(all_expenses_no_transfers.Account.unique())
-		spent_list =      [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount > 0) & (all_expenses_no_transfers.Category != 'Transfer')]).Amount.sum() for account in account_list ]
-		reimbursed_list = [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount < 0) & (all_expenses_no_transfers.Category != 'Transfer')]).Amount.sum() for account in account_list ]
+		spent_list =      [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount > 0)]).Amount.sum() for account in account_list ]
+		reimbursed_list = [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount < 0)]).Amount.sum() for account in account_list ]
 		reimbursement_df = pd.DataFrame({
 			'Account': account_list,
 			'Spent': spent_list,
