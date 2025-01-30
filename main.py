@@ -724,7 +724,7 @@ class Writer:
 			on='Account'
 		).rename(columns={'count': 'Transaction Count'})
 		reimbursement_df['Reimbursed/Refunded'] *= -1
-		self.write_title(sheet, 'Account Pivot', len(reimbursement_df.columns))
+		self.write_title(sheet, 'Account Pivot (excludes transfers)', len(reimbursement_df.columns))
 		account_table_name = sheet_name + 'AccountPivot'
 		self.write_table(
 			reimbursement_df,
