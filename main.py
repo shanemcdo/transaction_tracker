@@ -535,6 +535,7 @@ class Writer:
 		default_transactions = default_transactions[~income_condition]
 		positive_default_transactions = default_transactions[default_transactions.Amount > 0]
 		all_expenses = data.loc[data.Category.map(lambda x: x not in INCOME_CATEGORIES), data_headers]
+		all_expenses_no_transfers = all_expenses[all_expenses.Category != 'Transfer']
 		eligible_expenses = all_expenses[all_expenses.Category.map(lambda x: x not in [ 'Investing', 'Transfer' ])]
 		write_transaction_table(default_transactions, DEFAULT_ACCOUNT)
 		write_transaction_table(default_income_transactions, DEFAULT_ACCOUNT + ' Income', False)
@@ -704,13 +705,13 @@ class Writer:
 			True
 		)
 		# Account Pivot
-		pivot = all_expenses.pivot_table(
+		pivot = all_expenses_no_transfers.pivot_table(
 			index = 'Account',
 			**pivot_kwargs
 		).reset_index()
-		account_list = sorted(all_expenses.Account.unique())
-		spent_list =      [ (all_expenses[(all_expenses.Account == account) & (all_expenses.Amount > 0)]).Amount.sum() for account in account_list ]
-		reimbursed_list = [ (all_expenses[(all_expenses.Account == account) & (all_expenses.Amount < 0)]).Amount.sum() for account in account_list ]
+		account_list = sorted(all_expenses_no_transfers.Account.unique())
+		spent_list =      [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount > 0) & (all_expenses_no_transfers.Category != 'Transfer')]).Amount.sum() for account in account_list ]
+		reimbursed_list = [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount < 0) & (all_expenses_no_transfers.Category != 'Transfer')]).Amount.sum() for account in account_list ]
 		reimbursement_df = pd.DataFrame({
 			'Account': account_list,
 			'Spent': spent_list,
@@ -719,17 +720,10 @@ class Writer:
 			pivot[['Account', 'Amount', 'CashBack Reward']].set_index('Account'),
 			on='Account'
 		).join(
-			all_expenses.Account.value_counts(),
+			all_expenses_no_transfers.Account.value_counts(),
 			on='Account'
-		).rename(columns={
-			'count': 'Transaction Count',
-			'Spent': 'Amount',
-			'Amount': 'Net Change',
-			'Reimbursed/Refunded': 'Saved'
-		})
-		reimbursement_df['Net Change'] = reimbursement_df.Amount + reimbursement_df.Saved
-		reimbursement_df.Saved *= -1
-		# reimbursement_df.loc[reimbursement_df.Account == DEFAULT_ACCOUNT, 'Account'] = DEFAULT_ACCOUNT + ' (excluding transfers)'
+		).rename(columns={'count': 'Transaction Count'})
+		reimbursement_df['Reimbursed/Refunded'] *= -1
 		self.write_title(sheet, 'Account Pivot', len(reimbursement_df.columns))
 		account_table_name = sheet_name + 'AccountPivot'
 		self.write_table(
@@ -791,7 +785,7 @@ class Writer:
 		cashback_sum = all_expenses['CashBack Reward'].sum()
 		eligible_expenses_sum = eligible_expenses.Amount.sum()
 		cashback_info = pd.DataFrame({
-			'Eligible Spending Sum': [ eligible_expenses_sum ],
+			'Eligible Spending Sum (No transfers / investing)': [ eligible_expenses_sum ],
 			'Cashback Sum': [ cashback_sum ],
 			'Average cashback yield': [ cashback_sum / eligible_expenses_sum ],
 			'Average cashback yield excluding 0% cashback': [ cashback_sum / pivot[pivot['CashBack %'] != 0].Amount.sum() ],
