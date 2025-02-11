@@ -818,7 +818,6 @@ class Writer:
 			all_expenses_copy['Day Number'].value_counts(),
 			on='Day Number'
 		).rename(columns={'count': 'Transaction Count'}).fillna(0)
-
 		day_number_table_name = sheet_name + 'DayNumberPivot'
 		self.write_title(sheet, 'Day Number Pivot', len(pivot.columns))
 		self.write_table(
