@@ -757,7 +757,6 @@ class Writer:
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		day_table_name = sheet_name + 'DayPivot'
 		self.write_title(sheet, 'Day Pivot', len(pivot.columns))
-		print(pivot)
 		# replace nan with zero here
 		self.write_table(
 			pivot,
@@ -825,6 +824,21 @@ class Writer:
 			day_number_table_name,
 			sheet,
 			self.columns(pivot, {}, *pivot_columns_args),
+		)
+		# Category / Account pivot
+		pivot = all_expenses_no_transfers.pivot_table(
+			index = 'Category',
+			columns = 'Account',
+			values = 'Amount',
+			aggfunc = 'sum',
+			margins = True,
+		).reset_index().fillna(0)
+		self.write_title(sheet, 'Category / Account Pivot (excluding transfers)', len(pivot.columns))
+		self.write_table(
+			pivot,
+			sheet_name + 'CategoryAccountPivot',
+			sheet,
+			self.columns(pivot, *([ column_currency_kwargs ] * len(pivot.columns)))
 		)
 		self.go_to_next()
 		sheet.autofit()
