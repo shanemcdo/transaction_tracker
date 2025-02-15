@@ -909,7 +909,7 @@ class Writer:
 		write_summary must be called for this to work correctly
 		'''
 		budget = pd.concat(map(lambda x: x.get(13, pd.DataFrame()), self.monthly_budget.values())).groupby('Category', sort=False).sum().reset_index()
-		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), []))
+		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
 		self.write_month(14, data, 'SummaryAll', budget)
 
 	def focus(self, month: int):
