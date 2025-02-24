@@ -638,7 +638,7 @@ class Writer:
 		transaction_count_col = budget_categories_df.pop('Transaction Count')
 		budget_categories_df.insert(len(budget_categories_df.columns), 'Transaction Count', transaction_count_col)
 		budget_categories_table_name = sheet_name + 'BudgetCategoriesTable'
-		self.write_title(sheet, 'Budget Categories', len(budget_categories_df.columns))
+		self.write_title(sheet, 'Budget Categories (Excluding Transfers)', len(budget_categories_df.columns))
 		before_row = self.row
 		self.write_table(
 			budget_categories_df,
