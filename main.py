@@ -51,7 +51,7 @@ EMPTY = pd.DataFrame({
 })
 STARTING_STYLE_COUNT = 9
 ENDING_STYLE_COUNT = 14
-DEFAULT_ACCOUNT = 'Monthly'
+DEFAULT_ACCOUNT = 'Default'
 STARTING_YEAR = 2024
 
 def get_year() -> int:
