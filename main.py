@@ -556,11 +556,11 @@ class Writer:
 		income_and_balances_sum = income_sum + pre_balances_sum
 		all_expenses_sum = all_expenses.Amount.sum()
 		budget_info = pd.DataFrame([
-			['Monthly Income', income_sum],
-			['Monthly Expenses', expenses_sum],
-			['Monthly Expenses - transfers', expenses_sum - default_transactions[default_transactions.Category == 'Transfer'].Amount.sum()],
-			['Monthly Income - Monthly Expenses', income_sum - expenses_sum],
-			['Monthly Income - All Expenses', income_sum - all_expenses_sum],
+			[f'{DEFAULT_ACCOUNT} Income', income_sum],
+			[f'{DEFAULT_ACCOUNT} Expenses', expenses_sum],
+			[f'{DEFAULT_ACCOUNT} Expenses - transfers', expenses_sum - default_transactions[default_transactions.Category == 'Transfer'].Amount.sum()],
+			[f'{DEFAULT_ACCOUNT} Income - {DEFAULT_ACCOUNT} Expenses', income_sum - expenses_sum],
+			[f'{DEFAULT_ACCOUNT} Income - All Expenses', income_sum - all_expenses_sum],
 			['Income + Balances', income_and_balances_sum],
 			['All Expenses', all_expenses_sum],
 			['Income + Balances - All Expenses', income_and_balances_sum - all_expenses_sum],
