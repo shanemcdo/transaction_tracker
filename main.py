@@ -912,6 +912,35 @@ class Writer:
 		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
 		self.write_month(14, data, 'SummaryAll', budget)
 
+	def write_all_transactions(self):
+		'''
+		Create a new sheet that contains a table containing all available transaction data
+		'''
+		sheet_name = 'allTransactions'
+		table_name = sheet_name + '_all_transactions_table'
+		sheet = self.workbook.add_worksheet(sheet_name)
+		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
+		self.reset_position();
+		self.reset_style_count();
+		self.write_title(sheet, 'All Transactions', len(data.columns))
+		self.write_table(
+			data,
+			table_name,
+			sheet,
+			self.columns(
+				data,
+				{ 'total_string': 'Total', 'format': self.formats['date'] },
+				{},
+				{ 'total_function': 'sum', 'format': self.formats['currency'] },
+				{},
+				{},
+				{ 'format': self.formats['percent'] },
+				{ 'total_function': 'sum', 'format': self.formats['currency'] }
+			),
+			total = True
+		)
+		sheet.autofit()
+
 	def focus(self, month: int):
 		'''
 		Focus on a specific sheet when the workbook opens
@@ -976,6 +1005,7 @@ def main():
 	writer.set_year(STARTING_YEAR)
 	writer.reset_balances()
 	writer.write_summary_all()
+	writer.write_all_transactions()
 	writer.set_year(current_year)
 	writer.focus(now.month)
 	writer.full_screen()
