@@ -612,7 +612,7 @@ class Writer:
 			index = 'Category',
 			**pivot_kwargs
 		).reset_index().join(
-			all_expenses.Category.value_counts(),
+			default_transactions.Category.value_counts(),
 			on='Category'
 		).rename(columns={'count': 'Transaction Count'})
 		budget = self.monthly_budget[self.year][month] if budget is None else budget
