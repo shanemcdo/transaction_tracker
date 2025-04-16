@@ -223,7 +223,7 @@ class Writer:
 		return os.path.join(RAW_TRANSACTIONS_DIR, file)
 
 	@staticmethod
-	def parse_note(note: str, sep: str = '|') -> (str, float):
+	def parse_note(note: str, sep: str = '|') -> tuple[str, float]:
 		'''
 		Split note on seperator string and return parsed note and cashback
 		:note: original note containing note message and cashback %
@@ -241,7 +241,7 @@ class Writer:
 				pass
 		return note, 0.0
 
-	def read_month(self, month: int) -> (pd.DataFrame, float):
+	def read_month(self, month: int) -> tuple[pd.DataFrame, float]:
 		'''
 		parse csv and modify data for given month
 		:month: int 1-12, its the month to read in
@@ -301,7 +301,7 @@ class Writer:
 		if col > self.next_column:
 			self.next_column = col
 
-	def write_table_at(self, data: pd.DataFrame, table_name: str, sheet, start_row: int, start_col: int, columns: list[dict], total: bool = False, headers: bool = True) -> (int ,int):
+	def write_table_at(self, data: pd.DataFrame, table_name: str, sheet, start_row: int, start_col: int, columns: list[dict], total: bool = False, headers: bool = True) -> tuple[int ,int]:
 		'''
 		write pandas data to an excel table
 		:data: data to write to excel table
@@ -397,7 +397,7 @@ class Writer:
 		if col > self.next_column:
 			self.next_column = col
 
-	def write_month_table_at(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> (int, int):
+	def write_month_table_at(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> tuple[int, int]:
 		'''
 		writes a table that shows the sum of all transactions on each day of the month
 		uses conditional formatting
@@ -440,7 +440,7 @@ class Writer:
 		})
 		return start_row, start_col
 
-	def write_month_table_helper(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False) -> (int, int):
+	def write_month_table_helper(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False) -> tuple[int, int]:
 		'''
 		a helper function that
 		writes a table that shows the sum of all transactions on each day of the month
@@ -482,7 +482,7 @@ class Writer:
 		if col > self.next_column:
 			self.next_column = col
 
-	def write_title_at(self, sheet, title: str, width: int, start_row: int, start_col: int) -> (int, int):
+	def write_title_at(self, sheet, title: str, width: int, start_row: int, start_col: int) -> tuple[int, int]:
 		sheet.merge_range(self.row, self.column, self.row, self.column + width - 1, title, self.formats['merged'])
 		return self.row + 1, self.column + width
 
