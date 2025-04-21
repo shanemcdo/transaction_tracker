@@ -555,6 +555,7 @@ class Writer:
 		expenses_sum = default_transactions.Amount.sum()
 		income_and_balances_sum = income_sum + pre_balances_sum
 		all_expenses_sum = all_expenses.Amount.sum()
+		all_income_sum = -data.loc[data.Category.map(lambda x: x in INCOME_CATEGORIES)].Amount.sum()
 		budget_info = pd.DataFrame([
 			[f'{DEFAULT_ACCOUNT} Income', income_sum],
 			[f'{DEFAULT_ACCOUNT} Expenses', expenses_sum],
@@ -562,8 +563,10 @@ class Writer:
 			[f'{DEFAULT_ACCOUNT} Income - {DEFAULT_ACCOUNT} Expenses', income_sum - expenses_sum],
 			[f'{DEFAULT_ACCOUNT} Income - All Expenses', income_sum - all_expenses_sum],
 			['Income + Balances', income_and_balances_sum],
+			['All Income', all_income_sum],
 			['All Expenses', all_expenses_sum],
-			['Income + Balances - All Expenses', income_and_balances_sum - all_expenses_sum],
+			['Net Income', all_income_sum - all_expenses_sum],
+			['Net Income + balances', all_income_sum - all_expenses_sum + sum(self.balances.values())],
 		])
 		self.write_title(sheet, 'Overall Budget', len(budget_info.columns))
 		self.write_table(
