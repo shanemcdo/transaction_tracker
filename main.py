@@ -530,7 +530,7 @@ class Writer:
 				total=True
 			)
 		default_transactions = data.loc[data.Account == DEFAULT_ACCOUNT, data_headers]
-		income_condition = default_transactions.Category.map(lambda x: x in INCOME_CATEGORIES) & (default_transactions.Amount < 0)
+		income_condition = default_transactions.Category.map(lambda x: x in INCOME_CATEGORIES) & (default_transactions.Amount <= 0)
 		default_income_transactions = default_transactions[income_condition]
 		default_income_transactions.Amount *= -1
 		default_transactions = default_transactions[~income_condition]
@@ -584,7 +584,7 @@ class Writer:
 				self.balances.get(account, 0),
 				-data[data.Account == account].Amount.sum(),
 				data[(data.Account == account) & (data.Amount > 0)].Amount.sum(),
-				-data[(data.Account == account) & (data.Amount < 0)].Amount.sum(),
+				-data[(data.Account == account) & (data.Amount <= 0)].Amount.sum(),
 				len(data[data.Account == account].Amount),
 			] for account in sorted(set((*accounts, *self.balances.keys())))),
 			columns = ['Account', 'New Balance', 'Net Change', 'Spent', 'Saved', 'Transaction Count']
@@ -678,7 +678,7 @@ class Writer:
 		).reset_index()
 		categories_list = sorted(all_expenses.Category.unique())
 		spent_list =      [ (all_expenses[(all_expenses.Category == cat) & (all_expenses.Amount > 0)]).Amount.sum() for cat in categories_list ]
-		reimbursed_list = [ (all_expenses[(all_expenses.Category == cat) & (all_expenses.Amount < 0)]).Amount.sum() for cat in categories_list ]
+		reimbursed_list = [ (all_expenses[(all_expenses.Category == cat) & (all_expenses.Amount <= 0)]).Amount.sum() for cat in categories_list ]
 		reimbursement_df = pd.DataFrame({
 			'Category': categories_list,
 			'Spent': spent_list,
@@ -715,7 +715,7 @@ class Writer:
 		).reset_index()
 		account_list = sorted(all_expenses_no_transfers.Account.unique())
 		spent_list =      [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount > 0)]).Amount.sum() for account in account_list ]
-		reimbursed_list = [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount < 0)]).Amount.sum() for account in account_list ]
+		reimbursed_list = [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount <= 0)]).Amount.sum() for account in account_list ]
 		reimbursement_df = pd.DataFrame({
 			'Account': account_list,
 			'Spent': spent_list,
