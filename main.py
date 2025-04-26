@@ -700,7 +700,7 @@ class Writer:
 			),
 			False
 		)
-		sheet.conditional_format(before_row + 1, self.column + 3, self.row - 1, self.column + 3, {
+		sheet.conditional_format(before_row + 1, self.column + 4, self.row - 1, self.column + 4, {
 			'type': '3_color_scale',
 			'min_color': '#63be7b',
 			'min_type': 'num',
