@@ -675,11 +675,12 @@ class Writer:
 		transfer_max = income_sum - budget_categories_df.Amount.sum()
 		transfer_sum = pivot.loc[pivot.Category == 'Transfer', 'Amount']
 		transfers_df = pd.DataFrame(data = {
-			'Max (Income - Spend)': [transfer_max],
-			'Amount':               [transfer_sum],
-			'Remaining':            [transfer_max - transfer_sum],
-			'Usage %':              [transfer_sum / transfer_max],
-			'Transaction Count':    [pivot.loc[pivot.Category == 'Transfer', 'Transaction Count']],
+			'Expected (Income - Expected)': [income_sum - budget_categories_df.Expected.sum()],
+			'Max (Income - Spend)':         [transfer_max],
+			'Amount':                       [transfer_sum],
+			'Remaining':                    [transfer_max - transfer_sum],
+			'Usage %':                      [transfer_sum / transfer_max],
+			'Transaction Count':            [pivot.loc[pivot.Category == 'Transfer', 'Transaction Count']],
 		})
 		transfers_table_name = sheet_name + 'TransfersTable'
 		self.write_title(sheet, f'{DEFAULT_ACCOUNT} Transfers', len(transfers_df.columns))
@@ -690,6 +691,7 @@ class Writer:
 			sheet,
 			self.columns(
 				transfers_df,
+				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
 				column_currency_kwargs,
