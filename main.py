@@ -671,6 +671,45 @@ class Writer:
 			'max_type': 'num',
 			'max_value': 1,
 		})
+		# transfers table
+		transfer_max = income_sum - budget_categories_df.Amount.sum()
+		transfer_sum = pivot.loc[pivot.Category == 'Transfer', 'Amount']
+		transfers_df = pd.DataFrame(data = {
+			'Max (Income - Spend)': [transfer_max],
+			'Amount':               [transfer_sum],
+			'Remaining':            [transfer_max - transfer_sum],
+			'Usage %':              [transfer_sum / transfer_max],
+			'Transaction Count':    [pivot.loc[pivot.Category == 'Transfer', 'Transaction Count']],
+		})
+		transfers_table_name = sheet_name + 'TransfersTable'
+		self.write_title(sheet, f'{DEFAULT_ACCOUNT} Transfers', len(transfers_df.columns))
+		before_row = self.row
+		self.write_table(
+			transfers_df,
+			transfers_table_name,
+			sheet,
+			self.columns(
+				transfers_df,
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_currency_kwargs,
+				column_percent_kwargs,
+				column_total_sum_kwargs,
+			),
+			False
+		)
+		sheet.conditional_format(before_row + 1, self.column + 3, self.row - 1, self.column + 3, {
+			'type': '3_color_scale',
+			'min_color': '#63be7b',
+			'min_type': 'num',
+			'min_value': 0,
+			'mid_color': '#ffeb84',
+			'mid_type': 'num',
+			'mid_value': 0.5,
+			'max_color': '#f8696b',
+			'max_type': 'num',
+			'max_value': 1,
+		})
 		# category pivot & reimbursement/refund table
 		pivot = all_expenses.pivot_table(
 			index = 'Category',
