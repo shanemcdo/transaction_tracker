@@ -343,7 +343,7 @@ class Writer:
 		})
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_chart_at(self, name: str, chart_type: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True):
+	def write_chart_at(self, name: str, chart_type: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True, size: int = { 'x': 520, 'y': 520 }):
 		'''
 		write pandas data to an excel pie chart
 		:name: title for the pie chart
@@ -377,12 +377,11 @@ class Writer:
 				'position': 'best_fit' if chart_type == 'pie' else 'outside_end'
 			}
 		})
-		size = 520
 		chart.set_size({
-			'width': size,
-			'height': size,
-			'x_offset': j * size,
-			'y_offset': i * size,
+			'width': size['x'],
+			'height': size['y'],
+			'x_offset': j * size['x'],
+			'y_offset': i * size['y'],
 		})
 		sheet.insert_chart(start_row, start_col, chart)
 
@@ -1021,6 +1020,7 @@ class Writer:
 			self.column,
 			'Category',
 			'Amount',
+			size = { 'x': 1620, 'y': 800 }
 		)
 		sheet.autofit()
 
