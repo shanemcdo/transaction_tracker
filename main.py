@@ -999,7 +999,7 @@ class Writer:
 		pivot['CashBack Reward'] = pivot.Category.map(lambda x: f'=SUM(FILTER(SUBTOTAL(109,OFFSET({table_name}[CashBack Reward],ROW({table_name}[CashBack Reward])-ROW(INDEX({table_name}[CashBack Reward],1)),,1)),{table_name}[Category]="{x}", 0))')
 		self.reset_position();
 		self.reset_style_count();
-		self.write_title(sheet, 'Categories Pivot', len(pivot.columns))
+		self.write_title(sheet, 'All transactions Categories (filter with all transactions tab)', len(pivot.columns))
 		self.write_table(
 			pivot,
 			pivot_table_name,
@@ -1012,6 +1012,7 @@ class Writer:
 				self.column_total_sum_kwargs,
 			),
 		)
+		sheet.autofit()
 
 
 		self.go_to_next()
