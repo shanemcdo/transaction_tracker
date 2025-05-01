@@ -125,6 +125,13 @@ class Writer:
 		self.balances = {}
 		self.reset_style_count()
 		self.set_year(get_year())
+		self.column_total_sum_kwargs = { 'total_function': 'sum' }
+		self.column_currency_kwargs = { 'format': self.formats['currency'], **self.column_total_sum_kwargs }
+		self.column_total_kwargs = { 'total_string': 'Total' }
+		self.column_date_kwargs = { 'format': self.formats['date'] }
+		self.column_percent_kwargs = { 'format': self.formats['percent'] }
+		self.pivot_kwargs = { 'values': [ 'Amount', 'CashBack Reward'], 'aggfunc': 'sum' }
+		self.pivot_columns_args = self.column_currency_kwargs, self.column_currency_kwargs, {}
 
 	def reset_position(self):
 		'''
@@ -500,13 +507,6 @@ class Writer:
 		self.reset_style_count()
 		self.reset_position()
 		data_headers = data.columns
-		column_total_sum_kwargs = { 'total_function': 'sum' }
-		column_currency_kwargs = { 'format': self.formats['currency'], **column_total_sum_kwargs }
-		column_total_kwargs = { 'total_string': 'Total' }
-		column_date_kwargs = { 'format': self.formats['date'] }
-		column_percent_kwargs = { 'format': self.formats['percent'] }
-		pivot_kwargs = { 'values': [ 'Amount', 'CashBack Reward'], 'aggfunc': 'sum' }
-		pivot_columns_args = column_currency_kwargs, column_currency_kwargs, {}
 		sheet_name = self.get_sheetname(month) if sheet_name is None else sheet_name
 		sheet = self.workbook.add_worksheet(sheet_name)
 		# table of default transactions
@@ -519,13 +519,13 @@ class Writer:
 				sheet,
 				self.columns(
 					default_transactions,
-					{ **column_total_kwargs, **column_date_kwargs },
+					{ **self.column_total_kwargs, **self.column_date_kwargs },
 					{},
-					column_currency_kwargs,
+					self.column_currency_kwargs,
 					{},
 					{},
-					column_percent_kwargs,
-					column_currency_kwargs,
+					self.column_percent_kwargs,
+					self.column_currency_kwargs,
 				),
 				total=True
 			)
@@ -574,7 +574,7 @@ class Writer:
 			budget_info,
 			sheet_name + 'BudgetTable',
 			sheet,
-			[{}, column_currency_kwargs],
+			[{}, self.column_currency_kwargs],
 			headers = False
 		)
 		# balances
@@ -603,18 +603,18 @@ class Writer:
 			self.columns(
 				balances_df,
 				{},
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_total_sum_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_total_sum_kwargs,
 			),
 			total = True
 		)
 		# Budget Categories Table
 		pivot = default_transactions.pivot_table(
 			index = 'Category',
-			**pivot_kwargs
+			**self.pivot_kwargs
 		).reset_index().join(
 			default_transactions.Category.value_counts(),
 			on='Category'
@@ -651,11 +651,11 @@ class Writer:
 			self.columns(
 				budget_categories_df,
 				{},
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_percent_kwargs,
-				column_total_sum_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_percent_kwargs,
+				self.column_total_sum_kwargs,
 			),
 			True
 		)
@@ -691,12 +691,12 @@ class Writer:
 			sheet,
 			self.columns(
 				transfers_df,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_percent_kwargs,
-				column_total_sum_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_percent_kwargs,
+				self.column_total_sum_kwargs,
 			),
 			False
 		)
@@ -715,7 +715,7 @@ class Writer:
 		# category pivot & reimbursement/refund table
 		pivot = all_expenses.pivot_table(
 			index = 'Category',
-			**pivot_kwargs
+			**self.pivot_kwargs
 		).reset_index()
 		categories_list = sorted(all_expenses.Category.unique())
 		spent_list =      [ (all_expenses[(all_expenses.Category == cat) & (all_expenses.Amount > 0)]).Amount.sum() for cat in categories_list ]
@@ -741,18 +741,18 @@ class Writer:
 			self.columns(
 				reimbursement_df,
 				{},
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_total_sum_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_total_sum_kwargs,
 			),
 			True
 		)
 		# Account Pivot
 		pivot = all_expenses_no_transfers.pivot_table(
 			index = 'Account',
-			**pivot_kwargs
+			**self.pivot_kwargs
 		).reset_index()
 		account_list = sorted(all_expenses_no_transfers.Account.unique())
 		spent_list =      [ (all_expenses_no_transfers[(all_expenses_no_transfers.Account == account) & (all_expenses_no_transfers.Amount > 0)]).Amount.sum() for account in account_list ]
@@ -778,11 +778,11 @@ class Writer:
 			self.columns(
 				reimbursement_df,
 				{},
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_total_sum_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_total_sum_kwargs,
 			),
 			True
 		)
@@ -790,7 +790,7 @@ class Writer:
 		all_expenses['Day'] = all_expenses['Date'].apply(lambda x: x.strftime('%w%a'))
 		pivot = all_expenses.pivot_table(
 			index = 'Day',
-			**pivot_kwargs
+			**self.pivot_kwargs
 		).reset_index()
 		for day in [ '0Sun', '1Mon', '2Tue', '3Wed', '4Thu', '5Fri', '6Sat']:
 			if day not in pivot['Day'].values:
@@ -807,12 +807,12 @@ class Writer:
 			pivot,
 			day_table_name,
 			sheet,
-			self.columns(pivot, {}, *pivot_columns_args),
+			self.columns(pivot, {}, *self.pivot_columns_args),
 		)
 		# cashback pivot
 		pivot = all_expenses.pivot_table(
 			index = 'CashBack %',
-			**pivot_kwargs
+			**self.pivot_kwargs
 		).reset_index().join(
 			all_expenses['CashBack %'].value_counts(),
 			on='CashBack %'
@@ -823,7 +823,7 @@ class Writer:
 			pivot,
 			cash_back_table_name,
 			sheet,
-			self.columns(pivot, column_percent_kwargs, *pivot_columns_args),
+			self.columns(pivot, self.column_percent_kwargs, *self.pivot_columns_args),
 		)
 		# avg cashback 
 		cashback_sum = all_expenses['CashBack Reward'].sum()
@@ -841,10 +841,10 @@ class Writer:
 			sheet,
 			self.columns(
 				cashback_info,
-				column_currency_kwargs,
-				column_currency_kwargs,
-				column_percent_kwargs,
-				column_percent_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_percent_kwargs,
+				self.column_percent_kwargs,
 			)
 		)
 		# day number pivot
@@ -852,7 +852,7 @@ class Writer:
 		all_expenses_copy['Day Number'] = all_expenses.Date.apply(lambda x: int(x.strftime('%-d')))
 		pivot = all_expenses_copy.pivot_table(
 			index = 'Day Number',
-			**pivot_kwargs
+			**self.pivot_kwargs
 		).reset_index()
 		for i in range(1, 32):
 			if any(pivot['Day Number'] == i):
@@ -868,7 +868,7 @@ class Writer:
 			pivot,
 			day_number_table_name,
 			sheet,
-			self.columns(pivot, {}, *pivot_columns_args),
+			self.columns(pivot, {}, *self.pivot_columns_args),
 		)
 		# Category / Account pivot
 		pivot = all_expenses_no_transfers.pivot_table(
@@ -883,7 +883,7 @@ class Writer:
 			pivot,
 			sheet_name + 'CategoryAccountPivot',
 			sheet,
-			self.columns(pivot, *([ column_currency_kwargs ] * len(pivot.columns)))
+			self.columns(pivot, *([ self.column_currency_kwargs ] * len(pivot.columns)))
 		)
 		self.go_to_next()
 		sheet.autofit()
@@ -983,6 +983,46 @@ class Writer:
 				{ 'total_function': 'sum', 'format': self.formats['currency'] }
 			),
 			total = True
+		)
+		self.go_to_next()
+
+
+		table_name += '_pivot'
+		pivot = data.pivot_table(
+			index = 'Category',
+			**self.pivot_kwargs
+		).reset_index().join(
+			data.Category.value_counts(),
+			on='Category'
+		).rename(columns={'count': 'Transaction Count'}).sort_values('Amount')
+		self.write_title(sheet, 'Categories Pivot', len(pivot.columns))
+		self.write_table(
+			pivot,
+			table_name,
+			sheet,
+			self.columns(
+				pivot,
+				{},
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_total_sum_kwargs,
+			),
+			True
+		)
+
+
+		self.go_to_next()
+		self.write_pie_chart_at(
+			'Category by Ammount',
+			'column',
+			table_name,
+			sheet,
+			self.row,
+			self.column,
+			'Category',
+			'Amount',
 		)
 		sheet.autofit()
 
