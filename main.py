@@ -1005,8 +1005,6 @@ class Writer:
 				{},
 				self.column_currency_kwargs,
 				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
 				self.column_total_sum_kwargs,
 			),
 			True
