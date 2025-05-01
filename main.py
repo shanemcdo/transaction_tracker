@@ -983,10 +983,11 @@ class Writer:
 			),
 			total = True
 		)
-		self.go_to_next()
+		sheet.autofit()
 
-
-		table_name += '_pivot'
+		sheet_name = 'allTransactionsPivot'
+		sheet = self.workbook.add_worksheet(sheet_name)
+		pivot_table_name = sheet_name + 'Table'
 		pivot = data.pivot_table(
 			index = 'Category',
 			**self.pivot_kwargs
@@ -994,10 +995,14 @@ class Writer:
 			data.Category.value_counts(),
 			on='Category'
 		).rename(columns={'count': 'Transaction Count'}).sort_values('Amount')
+		pivot.Amount = pivot.Category.map(lambda x: f'=SUM(FILTER(SUBTOTAL(109,OFFSET({table_name}[Amount],ROW({table_name}[Amount])-ROW(INDEX({table_name}[Amount],1)),,1)),{table_name}[Category]="{x}", 0))')
+		pivot['CashBack Reward'] = pivot.Category.map(lambda x: f'=SUM(FILTER(SUBTOTAL(109,OFFSET({table_name}[CashBack Reward],ROW({table_name}[CashBack Reward])-ROW(INDEX({table_name}[CashBack Reward],1)),,1)),{table_name}[Category]="{x}", 0))')
+		self.reset_position();
+		self.reset_style_count();
 		self.write_title(sheet, 'Categories Pivot', len(pivot.columns))
 		self.write_table(
 			pivot,
-			table_name,
+			pivot_table_name,
 			sheet,
 			self.columns(
 				pivot,
@@ -1006,7 +1011,6 @@ class Writer:
 				self.column_currency_kwargs,
 				self.column_total_sum_kwargs,
 			),
-			True
 		)
 
 
@@ -1014,7 +1018,7 @@ class Writer:
 		self.write_chart_at(
 			'Category by Ammount',
 			'column',
-			table_name,
+			pivot_table_name,
 			sheet,
 			self.row,
 			self.column,
