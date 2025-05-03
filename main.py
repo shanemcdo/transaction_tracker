@@ -18,6 +18,7 @@ INCOME_CATEGORIES = [
 	'Sale',
 	'Carry Over',
 	'Interest',
+	'Gift',
 ]
 MONTHS = {
 	1: 'January',
