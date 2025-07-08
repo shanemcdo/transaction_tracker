@@ -9,6 +9,13 @@ from glob import glob
 import json
 from functools import reduce
 
+# names of accounts in balances that are stored in savings accounts
+SAVINGS_ACCOUNTS = [
+'Car Repair',
+'Discretionary Savings',
+'Emergency',
+'Wedding',
+]
 INCOME_CATEGORIES = [
 	'Cashback',
 	'Salary',
@@ -610,6 +617,20 @@ class Writer:
 				self.column_total_sum_kwargs,
 			),
 			total = True
+		)
+		# balances sum table
+		savings = balances_df.Account.map(lambda x: x in SAVINGS_ACCOUNTS)
+		balances_info = pd.DataFrame([
+			['Checking Sum', balances_df[~savings]['New Balance'].sum()],
+			['Savings Sum', balances_df[savings]['New Balance'].sum()],
+		])
+		self.write_title(sheet, 'Balances Sums', len(balances_info.columns))
+		self.write_table(
+			balances_info,
+			sheet_name + 'BalancesSumsTable',
+			sheet,
+			[{}, self.column_currency_kwargs],
+			headers = False
 		)
 		# Budget Categories Table
 		pivot = default_transactions.pivot_table(
