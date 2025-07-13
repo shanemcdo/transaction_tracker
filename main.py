@@ -87,7 +87,7 @@ class Writer:
 	def __init__(self, filename: str):
 		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter')
 		self.workbook = self.excelWriter.book
-		currency = { 'num_format': '$#,##0.00' }
+		currency = { 'num_format': 44 }
 		border = { 'border': True }
 		self.formats = {
 			'currency': self.workbook.add_format(currency),
