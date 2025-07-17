@@ -1036,7 +1036,6 @@ class Writer:
 		)
 		sheet.autofit()
 
-
 		self.go_to_next()
 		self.write_chart_at(
 			'Category by Ammount',
@@ -1050,6 +1049,7 @@ class Writer:
 			size = { 'x': 1620, 'y': 800 }
 		)
 		sheet.autofit()
+
 
 	def focus(self, month: int):
 		'''
