@@ -1153,7 +1153,7 @@ def main():
 		any_success = False
 		for month in range(1,13):
 			any_success |= writer.handle_month(month)
-			if current_year != year:
+			if current_year != year or month + 3 < now.month:
 				writer.hide(month)
 		if any_success:
 			writer.reset_balances()
