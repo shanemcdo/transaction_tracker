@@ -2,6 +2,7 @@
 
 import os
 import xlsxwriter
+from xlsxwriter.utility import xl_rowcol_to_cell
 from datetime import datetime
 import calendar
 import pandas as pd
@@ -15,6 +16,13 @@ SAVINGS_ACCOUNTS = [
 'Discretionary Savings',
 'Emergency',
 'Wedding',
+]
+SAVINGS_BANK_SHEET_NAME = 'savings_check'
+SAVINGS_BANK_ACCOUNTS = [
+'Paypal Savings',
+'Capital One Savings',
+'Capital One Emergency',
+'Fidelity Cash',
 ]
 INCOME_CATEGORIES = [
 	'Cashback',
@@ -81,6 +89,10 @@ def stringify_date(day: int) -> str:
 			return f'{day}rd'
 		case _:
 			return f'{day}th'
+
+def clean_table_name(table_name: str) -> str:
+	return table_name.replace(' ', '_').replace('&', '') + 'Table'
+
 
 class Writer:
 
@@ -522,7 +534,7 @@ class Writer:
 			self.write_title(sheet, table_name, len(data.columns))
 			self.write_table(
 				data if include_cashback else data[['Date', 'Category', 'Amount', 'Note']],
-				sheet_name + table_name.replace(' ', '_').replace('&', '') + 'Table',
+				sheet_name + clean_table_name(table_name),
 				sheet,
 				self.columns(
 					default_transactions,
@@ -620,9 +632,19 @@ class Writer:
 		)
 		# balances sum table
 		savings = balances_df.Account.map(lambda x: x in SAVINGS_ACCOUNTS)
+		savings_sum_today = f'={xl_rowcol_to_cell(self.row + 2, self.column + 1)}'
+		for account in SAVINGS_ACCOUNTS:
+			if account not in accounts:
+				print(account, 'continuing')
+				continue
+			account_table_name = clean_table_name(account)
+			savings_sum_today += f' - SUM(FILTER({sheet_name}{account_table_name}[Amount], {sheet_name}{account_table_name}[Date] > TODAY(), 0))'
 		balances_info = pd.DataFrame([
-			['Checking Sum', balances_df[~savings]['New Balance'].sum()],
-			['Savings Sum', balances_df[savings]['New Balance'].sum()],
+			['Checking Sum (as of the end of the month)', balances_df[~savings]['New Balance'].sum()],
+			['Savings Sum (as of the end of the month)', balances_df[savings]['New Balance'].sum()],
+			['Savings Sum (as of today)', savings_sum_today],
+			['Savings Bank account Sum', f'=SUM({SAVINGS_BANK_SHEET_NAME}!B:B)'],
+			['Savings Bank account Sum - Savings sum (as of today)', f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}'],
 		])
 		self.write_title(sheet, 'Balances Sums', len(balances_info.columns))
 		self.write_table(
@@ -1050,6 +1072,30 @@ class Writer:
 		)
 		sheet.autofit()
 
+	def write_bank_accounts_check(self):
+		'''
+		create a tab used for checking validity of savings acounts against balances
+		'''
+		sheet_name = SAVINGS_BANK_SHEET_NAME
+		table_name = sheet_name + '_table'
+		sheet = self.workbook.add_worksheet(sheet_name)
+		self.reset_position();
+		self.reset_style_count();
+		data = pd.DataFrame({
+			'Bank Accounts': SAVINGS_BANK_ACCOUNTS,
+			'Value': [ 0 ] * len(SAVINGS_BANK_ACCOUNTS),
+		})
+		self.write_table(
+			data,
+			table_name,
+			sheet,
+			self.columns(
+				data,
+				{},
+				self.column_currency_kwargs,
+			),
+		)
+		sheet.autofit()
 
 	def focus(self, month: int):
 		'''
@@ -1116,6 +1162,7 @@ def main():
 	writer.reset_balances()
 	writer.write_summary_all()
 	writer.write_all_transactions()
+	writer.write_bank_accounts_check()
 	writer.set_year(current_year)
 	writer.focus(now.month)
 	writer.full_screen()
