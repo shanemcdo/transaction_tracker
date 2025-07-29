@@ -932,6 +932,26 @@ class Writer:
 		sheet.autofit()
 		if month != 14:
 			# month table
+			self.write_title(sheet, f'{DEFAULT_ACCOUNT} Expenses', 7)
+			self.write_month_table(
+				default_transactions,
+				sheet,
+				month
+			)
+			if month == 13:
+				self.go_to_next()
+			for account in accounts:
+				account_expenses = all_expenses[all_expenses.Account == account]
+				if account_expenses.shape[0] == 0: continue
+				self.write_title(sheet, f'{account} Expenses', 7)
+				self.write_month_table(
+					account_expenses,
+					sheet,
+					month
+				)
+				if month == 13:
+					self.go_to_next()
+			self.write_title(sheet, f'all Expenses', 7)
 			self.write_month_table(
 				all_expenses,
 				sheet,
