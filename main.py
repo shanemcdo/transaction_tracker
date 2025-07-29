@@ -592,11 +592,9 @@ class Writer:
 			[f'{DEFAULT_ACCOUNT} Expenses - transfers', expenses_sum - default_transactions[default_transactions.Category == 'Transfer'].Amount.sum()],
 			[f'{DEFAULT_ACCOUNT} Income - {DEFAULT_ACCOUNT} Expenses', income_sum - expenses_sum],
 			[f'{DEFAULT_ACCOUNT} Income - All Expenses', income_sum - all_expenses_sum],
-			['Income + Balances', income_and_balances_sum],
 			['All Income', all_income_sum],
 			['All Expenses', all_expenses_sum],
 			['Net Income', all_income_sum - all_expenses_sum],
-			['Net Income + balances', all_income_sum - all_expenses_sum + sum(self.balances.values())],
 		], columns = [' ', 'Yearly'])
 		if month == 13:
 			budget_info['Monthly'] = budget_info['Yearly'] / 12
