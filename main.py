@@ -116,6 +116,10 @@ class Writer:
 				'border_color': 'white',
 				'border': 1
 			}),
+			'green': self.workbook.add_format({
+				'bg_color': '#ffffff',
+				'font_color': '#419c59',
+			}),
 		}
 		# {
 		#   year: {
@@ -457,6 +461,12 @@ class Writer:
 					col,
 					header = True
 				)
+		sheet.conditional_format(*before, start_row, start_col -1, {
+			'type': 'cell',
+			'criteria': '<',
+			'value': 0,
+			'format': self.formats['green']
+		})
 		sheet.conditional_format(*before, start_row, start_col -1, {
 			'type': '3_color_scale',
 			'min_type': 'num',
