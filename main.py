@@ -597,14 +597,16 @@ class Writer:
 			['All Expenses', all_expenses_sum],
 			['Net Income', all_income_sum - all_expenses_sum],
 			['Net Income + balances', all_income_sum - all_expenses_sum + sum(self.balances.values())],
-		])
+		], columns = [' ', 'Yearly'])
+		if month == 13:
+			budget_info['Monthly'] = budget_info['Yearly'] / 12
 		self.write_title(sheet, 'Overall Budget', len(budget_info.columns))
 		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
 			sheet,
-			[{}, self.column_currency_kwargs],
-			headers = False
+			self.columns(budget_info, {}, self.column_currency_kwargs, self.column_currency_kwargs),
+			headers = month == 13
 		)
 		# balances
 		balances_df = pd.DataFrame(
