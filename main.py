@@ -448,7 +448,7 @@ class Writer:
 				start_row,
 				start_col,
 			)
-		else:
+		elif month == 13:
 			col = start_col
 			for month in range(1, 13):
 				if month not in self.data[self.year]:
@@ -461,6 +461,22 @@ class Writer:
 					col,
 					header = True
 				)
+		elif month == 14:
+			col = start_col
+			old_year = self.year
+			for year in sorted(self.data):
+				self.year = year
+				for month in self.data[year]:
+					start_row, start_col = self.write_month_table_helper(
+						data,
+						sheet,
+						month,
+						start_row,
+						col,
+						header = True,
+						header_year = True,
+					)
+			self.year = old_year
 		sheet.conditional_format(*before, start_row, start_col -1, {
 			'type': 'cell',
 			'criteria': '<',
@@ -477,7 +493,7 @@ class Writer:
 		})
 		return start_row, start_col
 
-	def write_month_table_helper(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False) -> tuple[int, int]:
+	def write_month_table_helper(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False, header_year: bool = False) -> tuple[int, int]:
 		'''
 		a helper function that
 		writes a table that shows the sum of all transactions on each day of the month
@@ -487,6 +503,7 @@ class Writer:
 		:start_row: row in sheet to start writing table
 		:start_col: column in sheet to start writing table
 		:header: whether or not to include the month name header
+		:header_year: whether or not to include the year in the month name header
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
 		cal = []
@@ -501,7 +518,10 @@ class Writer:
 		rows, cols = cal.shape
 		cols -= 1
 		if header:
-			sheet.merge_range(start_row, start_col, start_row, start_col + cols, MONTHS[month], self.formats['merged'])
+			header_string = MONTHS[month]
+			if header_year:
+				header_string += f' {self.year}'
+			sheet.merge_range(start_row, start_col, start_row, start_col + cols, header_string, self.formats['merged'])
 			start_row += 1
 		bounds = start_row, start_col, start_row + rows, start_col + cols
 		sheet.add_table(*bounds, {
@@ -940,34 +960,33 @@ class Writer:
 		)
 		self.go_to_next()
 		sheet.autofit()
-		if month != 14:
-			# month table
-			self.write_title(sheet, f'{DEFAULT_ACCOUNT} Expenses', 7)
-			self.write_month_table(
-				default_transactions,
-				sheet,
-				month
-			)
-			if month == 13:
-				self.go_to_next()
-			for account in accounts:
-				account_expenses = all_expenses[all_expenses.Account == account]
-				if account_expenses.shape[0] == 0: continue
-				self.write_title(sheet, f'{account} Expenses', 7)
-				self.write_month_table(
-					account_expenses,
-					sheet,
-					month
-				)
-				if month == 13:
-					self.go_to_next()
-			self.write_title(sheet, f'all Expenses', 7)
-			self.write_month_table(
-				all_expenses,
-				sheet,
-				month
-			)
+		# month table
+		self.write_title(sheet, f'{DEFAULT_ACCOUNT} Expenses', 7)
+		self.write_month_table(
+			default_transactions,
+			sheet,
+			month
+		)
+		if month in (13, 14):
 			self.go_to_next()
+		for account in accounts:
+			account_expenses = all_expenses[all_expenses.Account == account]
+			if account_expenses.shape[0] == 0: continue
+			self.write_title(sheet, f'{account} Expenses', 7)
+			self.write_month_table(
+				account_expenses,
+				sheet,
+				month
+			)
+			if month in (13, 14):
+				self.go_to_next()
+		self.write_title(sheet, f'all Expenses', 7)
+		self.write_month_table(
+			all_expenses,
+			sheet,
+			month
+		)
+		self.go_to_next()
 		# charts
 		for i, value_field in enumerate(('Amount', 'Transaction Count', 'CashBack Reward' )):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
