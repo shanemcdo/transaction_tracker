@@ -618,13 +618,20 @@ class Writer:
 		], columns = [' ', 'Yearly'])
 		if month == 13:
 			budget_info['Monthly'] = budget_info['Yearly'] / 12
+		elif month == 14:
+			month_count = sum(len(year_obj) for year_obj in self.data.values())
+			print('-' * 100)
+			print(month_count)
+			print('-' * 100)
+			budget_info['Monthly'] = budget_info['Yearly'] / month_count
+			budget_info.rename(columns = {'Yearly': 'Total'})
 		self.write_title(sheet, 'Overall Budget', len(budget_info.columns))
 		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
 			sheet,
 			self.columns(budget_info, {}, self.column_currency_kwargs, self.column_currency_kwargs),
-			headers = month == 13
+			headers = month in (13, 14)
 		)
 		# balances
 		balances_df = pd.DataFrame(
