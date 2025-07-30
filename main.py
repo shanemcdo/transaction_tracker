@@ -961,6 +961,14 @@ class Writer:
 		self.go_to_next()
 		sheet.autofit()
 		# month table
+		self.write_title(sheet, f'all Expenses', 7)
+		self.write_month_table(
+			all_expenses,
+			sheet,
+			month
+		)
+		if month in (13, 14):
+			self.go_to_next()
 		self.write_title(sheet, f'{DEFAULT_ACCOUNT} Expenses', 7)
 		self.write_month_table(
 			default_transactions,
@@ -980,13 +988,8 @@ class Writer:
 			)
 			if month in (13, 14):
 				self.go_to_next()
-		self.write_title(sheet, f'all Expenses', 7)
-		self.write_month_table(
-			all_expenses,
-			sheet,
-			month
-		)
-		self.go_to_next()
+		if month not in (13, 14):
+			self.go_to_next()
 		# charts
 		for i, value_field in enumerate(('Amount', 'Transaction Count', 'CashBack Reward' )):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
