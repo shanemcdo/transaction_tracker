@@ -684,8 +684,9 @@ class Writer:
 			on='Category'
 		).rename(columns={'count': 'Transaction Count'})
 		budget = self.monthly_budget[self.year][month] if budget is None else budget
+		extra_budget_cols = 'Amount', 'Transaction Count', 'CashBack Reward'
 		budget_categories_df = budget.join(
-			pivot[['Category', 'Amount', 'Transaction Count', 'CashBack Reward']].set_index('Category'),
+			pivot[['Category', *extra_budget_cols]].set_index('Category'),
 			on='Category',
 		)
 		all_cats = set()
@@ -695,14 +696,11 @@ class Writer:
 				continue
 			cats = set(map(lambda x: x.strip(), cat.split('&')))
 			all_cats.update(cats)
-			budget_categories_df.loc[budget_categories_df.Category == cat, 'Amount'] = pivot[pivot.Category.map(lambda x: x in cats)].Amount.sum()
-			budget_categories_df.loc[budget_categories_df.Category == cat, 'Transaction Count'] = pivot[pivot.Category.map(lambda x: x in cats)]['Transaction Count'].sum()
-			budget_categories_df.loc[budget_categories_df.Category == cat, 'CashBack Reward'] = pivot[pivot.Category.map(lambda x: x in cats)]['CashBack Reward'].sum()
-		budget_categories_df.Amount = budget_categories_df.Amount.fillna(0)
-		budget_categories_df['Transaction Count'] = budget_categories_df['Transaction Count'].fillna(0)
-		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')].Amount.sum()
-		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Transaction Count'] = len(pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')]['Transaction Count'])
-		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'CashBack Reward'] = len(pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')]['CashBack Reward'])
+			for col in extra_budget_cols:
+				budget_categories_df.loc[budget_categories_df.Category == cat, col] = pivot.loc[pivot.Category.map(lambda x: x in cats), col].sum()
+		for col in extra_budget_cols:
+			budget_categories_df[col] = budget_categories_df[col].fillna(0)
+			budget_categories_df.loc[budget_categories_df.Category == 'Other', col] = pivot.loc[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer'), col].sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
 		budget_categories_df = budget_categories_df[['Category', 'Expected', 'Amount', 'Remaining', 'Usage %', 'CashBack Reward', 'Transaction Count']]
