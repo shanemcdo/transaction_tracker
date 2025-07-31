@@ -569,7 +569,9 @@ class Writer:
 		default_transactions = data.loc[data.Account == DEFAULT_ACCOUNT, data_headers]
 		income_condition = default_transactions.Category.map(lambda x: x in INCOME_CATEGORIES) & (default_transactions.Amount <= 0)
 		default_income_transactions = default_transactions[income_condition]
-		default_income_transactions.Amount *= -1
+		# default_income_transactions.Amount *= -1
+		# below required according to: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+		default_income_transactions.loc[:, 'Amount'] *= -1
 		default_transactions = default_transactions[~income_condition]
 		positive_default_transactions = default_transactions[default_transactions.Amount > 0]
 		all_expenses = data.loc[data.Category.map(lambda x: x not in INCOME_CATEGORIES), data_headers]
