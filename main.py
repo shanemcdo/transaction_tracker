@@ -658,7 +658,6 @@ class Writer:
 		savings_sum_today = f'={xl_rowcol_to_cell(self.row + 2, self.column + 1)}'
 		for account in SAVINGS_ACCOUNTS:
 			if account not in accounts:
-				print(account, 'continuing')
 				continue
 			account_table_name = clean_table_name(account)
 			savings_sum_today += f' - SUM(FILTER({sheet_name}{account_table_name}[Amount], {sheet_name}{account_table_name}[Date] > TODAY(), 0))'
