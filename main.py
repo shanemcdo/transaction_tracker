@@ -685,7 +685,7 @@ class Writer:
 		).rename(columns={'count': 'Transaction Count'})
 		budget = self.monthly_budget[self.year][month] if budget is None else budget
 		budget_categories_df = budget.join(
-			pivot[['Category', 'Amount', 'Transaction Count']].set_index('Category'),
+			pivot[['Category', 'Amount', 'Transaction Count', 'CashBack Reward']].set_index('Category'),
 			on='Category',
 		)
 		all_cats = set()
@@ -697,17 +697,19 @@ class Writer:
 			all_cats.update(cats)
 			budget_categories_df.loc[budget_categories_df.Category == cat, 'Amount'] = pivot[pivot.Category.map(lambda x: x in cats)].Amount.sum()
 			budget_categories_df.loc[budget_categories_df.Category == cat, 'Transaction Count'] = pivot[pivot.Category.map(lambda x: x in cats)]['Transaction Count'].sum()
+			budget_categories_df.loc[budget_categories_df.Category == cat, 'CashBack Reward'] = pivot[pivot.Category.map(lambda x: x in cats)]['CashBack Reward'].sum()
 		budget_categories_df.Amount = budget_categories_df.Amount.fillna(0)
 		budget_categories_df['Transaction Count'] = budget_categories_df['Transaction Count'].fillna(0)
 		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Amount'] = pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')].Amount.sum()
 		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'Transaction Count'] = len(pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')]['Transaction Count'])
+		budget_categories_df.loc[budget_categories_df.Category == 'Other', 'CashBack Reward'] = len(pivot[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer')]['CashBack Reward'])
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
-		transaction_count_col = budget_categories_df.pop('Transaction Count')
-		budget_categories_df.insert(len(budget_categories_df.columns), 'Transaction Count', transaction_count_col)
+		budget_categories_df = budget_categories_df[['Category', 'Expected', 'Amount', 'Remaining', 'Usage %', 'CashBack Reward', 'Transaction Count']]
 		budget_categories_table_name = sheet_name + 'BudgetCategoriesTable'
 		self.write_title('Budget Categories (Excluding Transfers)', len(budget_categories_df.columns))
 		before_row = self.row
+		print(budget_categories_df)
 		self.write_table(
 			budget_categories_df,
 			budget_categories_table_name,
@@ -718,6 +720,7 @@ class Writer:
 				self.column_currency_kwargs,
 				self.column_currency_kwargs,
 				self.column_percent_kwargs,
+				self.column_currency_kwargs,
 				self.column_total_sum_kwargs,
 			),
 			True
