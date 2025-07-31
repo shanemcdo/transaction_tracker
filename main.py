@@ -707,7 +707,6 @@ class Writer:
 		budget_categories_table_name = sheet_name + 'BudgetCategoriesTable'
 		self.write_title('Budget Categories (Excluding Transfers)', len(budget_categories_df.columns))
 		before_row = self.row
-		print(budget_categories_df)
 		self.write_table(
 			budget_categories_df,
 			budget_categories_table_name,
