@@ -605,11 +605,12 @@ class Writer:
 			['Net Income', all_income_sum - all_expenses_sum],
 		], columns = [' ', 'Yearly'])
 		if month == 13:
-			budget_info['Monthly'] = budget_info['Yearly'] / 12
+			month_count = len(self.data[self.year])
+			budget_info['Monthly'] = budget_info['Yearly'] / month_count
 		elif month == 14:
 			month_count = sum(len(year_obj) for year_obj in self.data.values())
 			budget_info['Monthly'] = budget_info['Yearly'] / month_count
-			budget_info.rename(columns = {'Yearly': 'Total'})
+			budget_info = budget_info.rename(columns = {'Yearly': 'Total'})
 		self.write_title('Overall Budget', len(budget_info.columns))
 		self.write_table(
 			budget_info,
