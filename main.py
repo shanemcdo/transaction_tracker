@@ -309,12 +309,11 @@ class Writer:
 			for column, column_kwargs in zip(df.columns, column_kwargs_list)
 		]
 
-	def write_table(self, data: pd.DataFrame, table_name: str, sheet, columns: list[dict], total: bool = False, headers: bool = True):
+	def write_table(self, data: pd.DataFrame, table_name: str, columns: list[dict], total: bool = False, headers: bool = True):
 		'''
 		write pandas data to an excel table at the location saved in the class
 		:data: data to write to excel table
 		:table_name: name of the table in excel
-		:sheet: sheet to write to
 		:columns: column config data that contains info about columns
 			https://xlsxwriter.readthedocs.io/working_with_tables.html#columns
 		:total: whether or not to include the total row
@@ -323,7 +322,6 @@ class Writer:
 		self.row, col = self.write_table_at(
 			data,
 			table_name,
-			sheet,
 			self.row,
 			self.column,
 			columns,
@@ -333,12 +331,11 @@ class Writer:
 		if col > self.next_column:
 			self.next_column = col
 
-	def write_table_at(self, data: pd.DataFrame, table_name: str, sheet, start_row: int, start_col: int, columns: list[dict], total: bool = False, headers: bool = True) -> tuple[int ,int]:
+	def write_table_at(self, data: pd.DataFrame, table_name: str, start_row: int, start_col: int, columns: list[dict], total: bool = False, headers: bool = True) -> tuple[int ,int]:
 		'''
 		write pandas data to an excel table
 		:data: data to write to excel table
 		:table_name: name of the table in excel
-		:sheet: sheet to write to
 		:start_row: row in sheet to start writing table
 		:start_col: column in sheet to start writing table
 		:columns: column config data that contains info about columns
@@ -357,7 +354,7 @@ class Writer:
 		if not total and not headers:
 			rows -= 1
 		cols -= 1 # no index
-		sheet.add_table(start_row, start_col, start_row + rows, start_col + cols, {
+		self.sheet.add_table(start_row, start_col, start_row + rows, start_col + cols, {
 			'columns': columns,
 			'name': table_name,
 			'header_row': headers,
@@ -367,13 +364,12 @@ class Writer:
 		})
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_chart_at(self, name: str, chart_type: str, table_name: str, sheet, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True, size: int = { 'x': 520, 'y': 520 }):
+	def write_chart_at(self, name: str, chart_type: str, table_name: str, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True, size: int = { 'x': 520, 'y': 520 }):
 		'''
 		write pandas data to an excel pie chart
 		:name: title for the pie chart
 		:chart_type: the kind of chart to use e.g. pie or column
 		:table_name: name of the table in excel to get the data from
-		:sheet: sheet to write to
 		:start_row: row in sheet to start writing pie chart
 		:start_col: column in sheet to start writing pie chart
 		:categories_field: the name of the field in the table where the categories come from
@@ -407,20 +403,18 @@ class Writer:
 			'x_offset': j * size['x'],
 			'y_offset': i * size['y'],
 		})
-		sheet.insert_chart(start_row, start_col, chart)
+		self.sheet.insert_chart(start_row, start_col, chart)
 
-	def write_month_table(self, data: pd.DataFrame, sheet, month: int):
+	def write_month_table(self, data: pd.DataFrame, month: int):
 		'''
 		writes a table that shows the sum of all transactions on each day of the month
 		uses conditional formatting
 		:data: the pandas dataframe containing the transaction data for the given month
-		:sheet: sheet to write to
 		:month: int 1-13, 1-12 represent the months of the year 13 represents all of the months
 		:return: (start_row, start_col) the new start row and col after the space taken up by the table
 		'''
 		self.row, col = self.write_month_table_at(
 			data,
-			sheet,
 			month,
 			self.row,
 			self.column
@@ -428,12 +422,11 @@ class Writer:
 		if col > self.next_column:
 			self.next_column = col
 
-	def write_month_table_at(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int) -> tuple[int, int]:
+	def write_month_table_at(self, data: pd.DataFrame, month: int, start_row: int, start_col: int) -> tuple[int, int]:
 		'''
 		writes a table that shows the sum of all transactions on each day of the month
 		uses conditional formatting
 		:data: the pandas dataframe containing the transaction data for the given month
-		:sheet: sheet to write to
 		:month: int 1-13, 1-12 represent the months of the year 13 represents all of the months
 		:start_row: row in sheet to start writing table
 		:start_col: column in sheet to start writing table
@@ -443,7 +436,6 @@ class Writer:
 		if 1 <= month <= 12:
 			start_row, start_col = self.write_month_table_helper(
 				data,
-				sheet,
 				month,
 				start_row,
 				start_col,
@@ -455,7 +447,6 @@ class Writer:
 					continue
 				start_row, start_col = self.write_month_table_helper(
 					data,
-					sheet,
 					month,
 					start_row,
 					col,
@@ -469,7 +460,6 @@ class Writer:
 				for month in self.data[year]:
 					start_row, start_col = self.write_month_table_helper(
 						data,
-						sheet,
 						month,
 						start_row,
 						col,
@@ -477,13 +467,13 @@ class Writer:
 						header_year = True,
 					)
 			self.year = old_year
-		sheet.conditional_format(*before, start_row, start_col -1, {
+		self.sheet.conditional_format(*before, start_row, start_col -1, {
 			'type': 'cell',
 			'criteria': '<',
 			'value': 0,
 			'format': self.formats['green']
 		})
-		sheet.conditional_format(*before, start_row, start_col -1, {
+		self.sheet.conditional_format(*before, start_row, start_col -1, {
 			'type': '3_color_scale',
 			'min_type': 'num',
 			'min_value': 0,
@@ -493,12 +483,11 @@ class Writer:
 		})
 		return start_row, start_col
 
-	def write_month_table_helper(self, data: pd.DataFrame, sheet, month: int, start_row: int, start_col: int, header: bool = False, header_year: bool = False) -> tuple[int, int]:
+	def write_month_table_helper(self, data: pd.DataFrame, month: int, start_row: int, start_col: int, header: bool = False, header_year: bool = False) -> tuple[int, int]:
 		'''
 		a helper function that
 		writes a table that shows the sum of all transactions on each day of the month
 		:data: the pandas dataframe containing the transaction data for the given month
-		:sheet: sheet to write to
 		:month: int 1-12 represent the months of the year
 		:start_row: row in sheet to start writing table
 		:start_col: column in sheet to start writing table
@@ -521,26 +510,26 @@ class Writer:
 			header_string = MONTHS[month]
 			if header_year:
 				header_string += f' {self.year}'
-			sheet.merge_range(start_row, start_col, start_row, start_col + cols, header_string, self.formats['merged'])
+			self.sheet.merge_range(start_row, start_col, start_row, start_col + cols, header_string, self.formats['merged'])
 			start_row += 1
 		bounds = start_row, start_col, start_row + rows, start_col + cols
-		sheet.add_table(*bounds, {
+		self.sheet.add_table(*bounds, {
 			'columns': [ { 'header': day, 'format': self.formats['currency'] } for day in (
 				'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
 			) ],
 			'data': cal.values.tolist(),
 			**self.get_style(STARTING_STYLE_COUNT)
 		})
-		sheet.set_column(start_col, start_col + cols, 10)
+		self.sheet.set_column(start_col, start_col + cols, 10)
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_title(self, sheet, title: str, width: int):
-		self.row, col = self.write_title_at(sheet, title, width, self.row, self.column)
+	def write_title(self, title: str, width: int):
+		self.row, col = self.write_title_at(title, width, self.row, self.column)
 		if col > self.next_column:
 			self.next_column = col
 
-	def write_title_at(self, sheet, title: str, width: int, start_row: int, start_col: int) -> tuple[int, int]:
-		sheet.merge_range(self.row, self.column, self.row, self.column + width - 1, title, self.formats['merged'])
+	def write_title_at(self, title: str, width: int, start_row: int, start_col: int) -> tuple[int, int]:
+		self.sheet.merge_range(self.row, self.column, self.row, self.column + width - 1, title, self.formats['merged'])
 		return self.row + 1, self.column + width
 
 	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None, budget: dict = None):
@@ -557,15 +546,14 @@ class Writer:
 		self.reset_position()
 		data_headers = data.columns
 		sheet_name = self.get_sheetname(month) if sheet_name is None else sheet_name
-		sheet = self.workbook.add_worksheet(sheet_name)
+		self.sheet = self.workbook.add_worksheet(sheet_name)
 		# table of default transactions
 		def write_transaction_table(data: pd.DataFrame, table_name: str, include_cashback: bool = True):
 			if data.shape[0] == 0: return
-			self.write_title(sheet, table_name, len(data.columns))
+			self.write_title(table_name, len(data.columns))
 			self.write_table(
 				data if include_cashback else data[['Date', 'Category', 'Amount', 'Note']],
 				sheet_name + clean_table_name(table_name),
-				sheet,
 				self.columns(
 					default_transactions,
 					{ **self.column_total_kwargs, **self.column_date_kwargs },
@@ -620,16 +608,12 @@ class Writer:
 			budget_info['Monthly'] = budget_info['Yearly'] / 12
 		elif month == 14:
 			month_count = sum(len(year_obj) for year_obj in self.data.values())
-			print('-' * 100)
-			print(month_count)
-			print('-' * 100)
 			budget_info['Monthly'] = budget_info['Yearly'] / month_count
 			budget_info.rename(columns = {'Yearly': 'Total'})
-		self.write_title(sheet, 'Overall Budget', len(budget_info.columns))
+		self.write_title('Overall Budget', len(budget_info.columns))
 		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
-			sheet,
 			self.columns(budget_info, {}, self.column_currency_kwargs, self.column_currency_kwargs),
 			headers = month in (13, 14)
 		)
@@ -651,11 +635,10 @@ class Writer:
 			(abs(balances_df['Spent']) >= 0.001) |
 			(abs(balances_df['Saved']) >= 0.001)
 		]
-		self.write_title(sheet, 'Balances', len(balances_df.columns))
+		self.write_title('Balances', len(balances_df.columns))
 		self.write_table(
 			balances_df,
 			sheet_name + 'BalancesTable',
-			sheet,
 			self.columns(
 				balances_df,
 				{},
@@ -683,11 +666,10 @@ class Writer:
 			['Savings Bank account Sum', f'=SUM({SAVINGS_BANK_SHEET_NAME}!B:B)'],
 			['Savings Bank account Sum - Savings sum (as of today)', f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}'],
 		])
-		self.write_title(sheet, 'Balances Sums', len(balances_info.columns))
+		self.write_title('Balances Sums', len(balances_info.columns))
 		self.write_table(
 			balances_info,
 			sheet_name + 'BalancesSumsTable',
-			sheet,
 			[{}, self.column_currency_kwargs],
 			headers = False
 		)
@@ -722,12 +704,11 @@ class Writer:
 		transaction_count_col = budget_categories_df.pop('Transaction Count')
 		budget_categories_df.insert(len(budget_categories_df.columns), 'Transaction Count', transaction_count_col)
 		budget_categories_table_name = sheet_name + 'BudgetCategoriesTable'
-		self.write_title(sheet, 'Budget Categories (Excluding Transfers)', len(budget_categories_df.columns))
+		self.write_title('Budget Categories (Excluding Transfers)', len(budget_categories_df.columns))
 		before_row = self.row
 		self.write_table(
 			budget_categories_df,
 			budget_categories_table_name,
-			sheet,
 			self.columns(
 				budget_categories_df,
 				{},
@@ -739,7 +720,7 @@ class Writer:
 			),
 			True
 		)
-		sheet.conditional_format(before_row + 1, self.column + 4, self.row - 1, self.column + 4, {
+		self.sheet.conditional_format(before_row + 1, self.column + 4, self.row - 1, self.column + 4, {
 			'type': '3_color_scale',
 			'min_color': '#63be7b',
 			'min_type': 'num',
@@ -763,12 +744,11 @@ class Writer:
 			'Transaction Count':            [pivot.loc[pivot.Category == 'Transfer', 'Transaction Count']],
 		})
 		transfers_table_name = sheet_name + 'TransfersTable'
-		self.write_title(sheet, f'{DEFAULT_ACCOUNT} Transfers', len(transfers_df.columns))
+		self.write_title(f'{DEFAULT_ACCOUNT} Transfers', len(transfers_df.columns))
 		before_row = self.row
 		self.write_table(
 			transfers_df,
 			transfers_table_name,
-			sheet,
 			self.columns(
 				transfers_df,
 				self.column_currency_kwargs,
@@ -780,7 +760,7 @@ class Writer:
 			),
 			False
 		)
-		sheet.conditional_format(before_row + 1, self.column + 4, self.row - 1, self.column + 4, {
+		self.sheet.conditional_format(before_row + 1, self.column + 4, self.row - 1, self.column + 4, {
 			'type': '3_color_scale',
 			'min_color': '#63be7b',
 			'min_type': 'num',
@@ -813,11 +793,10 @@ class Writer:
 		).rename(columns={'count': 'Transaction Count'})
 		reimbursement_df['Reimbursed/Refunded'] *= -1
 		cat_table_name = sheet_name + 'CatPivot'
-		self.write_title(sheet, 'Categories Pivot', len(reimbursement_df.columns))
+		self.write_title('Categories Pivot', len(reimbursement_df.columns))
 		self.write_table(
 			reimbursement_df,
 			cat_table_name,
-			sheet,
 			self.columns(
 				reimbursement_df,
 				{},
@@ -849,12 +828,11 @@ class Writer:
 			on='Account'
 		).rename(columns={'count': 'Transaction Count'})
 		reimbursement_df['Reimbursed/Refunded'] *= -1
-		self.write_title(sheet, 'Account Pivot (excludes transfers)', len(reimbursement_df.columns))
+		self.write_title('Account Pivot (excludes transfers)', len(reimbursement_df.columns))
 		account_table_name = sheet_name + 'AccountPivot'
 		self.write_table(
 			reimbursement_df,
 			account_table_name,
-			sheet,
 			self.columns(
 				reimbursement_df,
 				{},
@@ -881,12 +859,11 @@ class Writer:
 		).rename(columns={'count': 'Transaction Count'}).fillna(0)
 		pivot['Day'] = pivot['Day'].apply(lambda x: x[1:])
 		day_table_name = sheet_name + 'DayPivot'
-		self.write_title(sheet, 'Day Pivot', len(pivot.columns))
+		self.write_title('Day Pivot', len(pivot.columns))
 		# replace nan with zero here
 		self.write_table(
 			pivot,
 			day_table_name,
-			sheet,
 			self.columns(pivot, {}, *self.pivot_columns_args),
 		)
 		# cashback pivot
@@ -898,11 +875,10 @@ class Writer:
 			on='CashBack %'
 		).rename(columns={'count': 'Transaction Count'})
 		cash_back_table_name = sheet_name + 'CashBackPivot'
-		self.write_title(sheet, 'Cashback Pivot', len(pivot.columns))
+		self.write_title('Cashback Pivot', len(pivot.columns))
 		self.write_table(
 			pivot,
 			cash_back_table_name,
-			sheet,
 			self.columns(pivot, self.column_percent_kwargs, *self.pivot_columns_args),
 		)
 		# avg cashback 
@@ -914,11 +890,10 @@ class Writer:
 			'Average cashback yield': [ cashback_sum / eligible_expenses_sum ],
 			'Average cashback yield excluding 0% cashback': [ cashback_sum / pivot[pivot['CashBack %'] != 0].Amount.sum() ],
 		})
-		self.write_title(sheet, 'Cashback Info', len(cashback_info.columns))
+		self.write_title('Cashback Info', len(cashback_info.columns))
 		self.write_table(
 			cashback_info,
 			sheet_name + 'CashBackInfoTable',
-			sheet,
 			self.columns(
 				cashback_info,
 				self.column_currency_kwargs,
@@ -943,11 +918,10 @@ class Writer:
 			on='Day Number'
 		).rename(columns={'count': 'Transaction Count'}).fillna(0)
 		day_number_table_name = sheet_name + 'DayNumberPivot'
-		self.write_title(sheet, 'Day Number Pivot', len(pivot.columns))
+		self.write_title('Day Number Pivot', len(pivot.columns))
 		self.write_table(
 			pivot,
 			day_number_table_name,
-			sheet,
 			self.columns(pivot, {}, *self.pivot_columns_args),
 		)
 		# Category / Account pivot
@@ -958,28 +932,25 @@ class Writer:
 			aggfunc = 'sum',
 			margins = True,
 		).reset_index().fillna(0)
-		self.write_title(sheet, 'Category / Account Pivot (excluding transfers)', len(pivot.columns))
+		self.write_title('Category / Account Pivot (excluding transfers)', len(pivot.columns))
 		self.write_table(
 			pivot,
 			sheet_name + 'CategoryAccountPivot',
-			sheet,
 			self.columns(pivot, *([ self.column_currency_kwargs ] * len(pivot.columns)))
 		)
 		self.go_to_next()
-		sheet.autofit()
+		self.sheet.autofit()
 		# month table
-		self.write_title(sheet, f'all Expenses', 7)
+		self.write_title(f'all Expenses', 7)
 		self.write_month_table(
 			all_expenses,
-			sheet,
 			month
 		)
 		if month in (13, 14):
 			self.go_to_next()
-		self.write_title(sheet, f'{DEFAULT_ACCOUNT} Expenses', 7)
+		self.write_title(f'{DEFAULT_ACCOUNT} Expenses', 7)
 		self.write_month_table(
 			default_transactions,
-			sheet,
 			month
 		)
 		if month in (13, 14):
@@ -987,10 +958,9 @@ class Writer:
 		for account in accounts:
 			account_expenses = all_expenses[all_expenses.Account == account]
 			if account_expenses.shape[0] == 0: continue
-			self.write_title(sheet, f'{account} Expenses', 7)
+			self.write_title(f'{account} Expenses', 7)
 			self.write_month_table(
 				account_expenses,
-				sheet,
 				month
 			)
 			if month in (13, 14):
@@ -1010,7 +980,6 @@ class Writer:
 					f'{value_field} By {category_field}',
 					chart_type,
 					table_name,
-					sheet,
 					self.row,
 					self.column,
 					category_field,
@@ -1065,15 +1034,14 @@ class Writer:
 		'''
 		sheet_name = 'allTransactions'
 		table_name = sheet_name + '_all_transactions_table'
-		sheet = self.workbook.add_worksheet(sheet_name)
+		self.sheet = self.workbook.add_worksheet(sheet_name)
 		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
 		self.reset_position();
 		self.reset_style_count();
-		self.write_title(sheet, 'All Transactions', len(data.columns))
+		self.write_title('All Transactions', len(data.columns))
 		self.write_table(
 			data,
 			table_name,
-			sheet,
 			self.columns(
 				data,
 				{ 'total_string': 'Total', 'format': self.formats['date'] },
@@ -1086,10 +1054,10 @@ class Writer:
 			),
 			total = True
 		)
-		sheet.autofit()
+		self.sheet.autofit()
 
 		sheet_name = 'allTransactionsPivot'
-		sheet = self.workbook.add_worksheet(sheet_name)
+		self.sheet = self.workbook.add_worksheet(sheet_name)
 		pivot_table_name = sheet_name + 'Table'
 		pivot = data.pivot_table(
 			index = 'Category',
@@ -1102,11 +1070,10 @@ class Writer:
 		pivot['CashBack Reward'] = pivot.Category.map(lambda x: f'=SUM(FILTER(SUBTOTAL(109,OFFSET({table_name}[CashBack Reward],ROW({table_name}[CashBack Reward])-ROW(INDEX({table_name}[CashBack Reward],1)),,1)),{table_name}[Category]="{x}", 0))')
 		self.reset_position();
 		self.reset_style_count();
-		self.write_title(sheet, 'All transactions Categories (filter with all transactions tab)', len(pivot.columns))
+		self.write_title('All transactions Categories (filter with all transactions tab)', len(pivot.columns))
 		self.write_table(
 			pivot,
 			pivot_table_name,
-			sheet,
 			self.columns(
 				pivot,
 				{},
@@ -1115,21 +1082,20 @@ class Writer:
 				self.column_total_sum_kwargs,
 			),
 		)
-		sheet.autofit()
+		self.sheet.autofit()
 
 		self.go_to_next()
 		self.write_chart_at(
 			'Category by Ammount',
 			'column',
 			pivot_table_name,
-			sheet,
 			self.row,
 			self.column,
 			'Category',
 			'Amount',
 			size = { 'x': 1620, 'y': 800 }
 		)
-		sheet.autofit()
+		self.sheet.autofit()
 
 	def write_bank_accounts_check(self):
 		'''
@@ -1137,7 +1103,7 @@ class Writer:
 		'''
 		sheet_name = SAVINGS_BANK_SHEET_NAME
 		table_name = sheet_name + '_table'
-		sheet = self.workbook.add_worksheet(sheet_name)
+		self.sheet = self.workbook.add_worksheet(sheet_name)
 		self.reset_position();
 		self.reset_style_count();
 		data = pd.DataFrame({
@@ -1147,14 +1113,13 @@ class Writer:
 		self.write_table(
 			data,
 			table_name,
-			sheet,
 			self.columns(
 				data,
 				{},
 				self.column_currency_kwargs,
 			),
 		)
-		sheet.autofit()
+		self.sheet.autofit()
 
 	def focus(self, month: int):
 		'''
