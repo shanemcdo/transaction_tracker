@@ -273,7 +273,7 @@ class Writer:
 				pass
 		return note, 0.0
 
-	def read_month(self, month: int) -> tuple[pd.DataFrame, float]:
+	def read_month(self, month: int) -> pd.DataFrame:
 		'''
 		parse csv and modify data for given month
 		:month: int 1-12, its the month to read in
