@@ -215,9 +215,11 @@ class Writer:
 		'''
 		self.balances = self.starting_balances[self.year].copy()
 
-	def get_budget_df(self, month: int) -> str:
+	def get_budget_df(self, month: int, max_recursions: int = 100) -> pd.DataFrame:
 		'''
 		read the budget from the file
+		if it cannot find one it will create a new one copying the last month's
+		if it cannot find any within the lasst {max_recursion} months it will raise an FileNotFoundError
 
 		example file:
 		Category,Expected
@@ -228,8 +230,21 @@ class Writer:
 		Eating Out,300.0
 		Other,200.0
 		'''
-		df = pd.read_csv(os.path.join(BUDGETS_DIR, f'{self.year}{month:02d}budget.csv'))
-		return df
+		filename = os.path.join(BUDGETS_DIR, f'{self.year}{month:02d}budget.csv')
+		try:
+			return pd.read_csv(filename)
+		except FileNotFoundError as e:
+			if max_recursions < 1:
+				raise e
+			year = self.year
+			month -= 1
+			if month < 1:
+				month = 12
+				self.year -= 1
+			df = self.get_budget_df(month, max_recursions - 1)
+			df.to_csv(filename, index = False)
+			self.year = year
+			return df
 
 	def get_csv_filename_from_month(self, month: str) -> str:
 		# e.g. 'Transactions Nov 1, 2024 - Nov 30, 2024 (7).csv'
@@ -273,19 +288,22 @@ class Writer:
 				pass
 		return note, 0.0
 
-	def read_month(self, month: int) -> pd.DataFrame:
+	def read_month(self, month: int) -> pd.DataFrame | None:
 		'''
 		parse csv and modify data for given month
 		:month: int 1-12, its the month to read in
 		:return: a tuple of the csv data and the carry_over from the previous month
 		'''
-		filename = self.get_csv_filename_from_month(MONTHS_SHORT[month])
-		data = pd.read_csv(
-			filename,
-			sep ='\s*,\s*',
-			# get rid of warning
-			engine='python'
-		).sort_values(by = 'Date')
+		try:
+			filename = self.get_csv_filename_from_month(MONTHS_SHORT[month])
+			data = pd.read_csv(
+				filename,
+				sep ='\s*,\s*',
+				# get rid of warning
+				engine='python'
+			).sort_values(by = 'Date')
+		except FileNotFoundError:
+			return None
 		data.Amount *= -1
 		data = data[data.Category != 'Carry Over']
 		data.Date = data.Date.apply(parse_date)
@@ -999,13 +1017,12 @@ class Writer:
 		'''
 		if month < 1 or month > 12:
 			raise ValueError(f'month must be between 1-12 inclusive. actual = {month}')
-		try:
-			data = self.read_month(month)
-			if not data.empty:
-				self.write_month(month, data)
-		except FileNotFoundError as e:
-			print(f'Couldn \'t find file for month {month}. Continuing')
+		data = self.read_month(month)
+		if data is None:
+			print(f'Couldn \'t find transaction file for month {month}. Continuing')
 			return False
+		if not data.empty:
+			self.write_month(month, data)
 		return True
 
 	def write_summary(self):
