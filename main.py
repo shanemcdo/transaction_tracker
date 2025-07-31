@@ -1127,7 +1127,6 @@ class Writer:
 		Focus on a specific sheet when the workbook opens
 		:month: the sheet to focus on
 		'''
-		print(self.get_sheetname(month))
 		sheet = self.workbook.get_worksheet_by_name(self.get_sheetname(month))
 		if sheet:
 			sheet.activate()
