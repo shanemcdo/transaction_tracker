@@ -1126,7 +1126,7 @@ class Writer:
 		self.sheet = self.workbook.add_worksheet(sheet_name)
 		self.reset_position();
 		# Reads from the cards xlsx file in the dropbox finance folder
-		self.sheet.write_dynamic_array_formula('A1', f"='{FINANCE_PATH}[cards.xlsx]Balances'!$H$1:$I$5")
+		self.sheet.write_dynamic_array_formula('A1', f"='{FINANCE_PATH}[budget.xlsx]Balances'!$H$1:$I$5")
 		self.sheet.autofit()
 		self.sheet.hide()
 
