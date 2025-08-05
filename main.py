@@ -17,13 +17,6 @@ SAVINGS_ACCOUNTS = [
 'Emergency',
 'Wedding',
 ]
-SAVINGS_BANK_SHEET_NAME = 'savings_check'
-SAVINGS_BANK_ACCOUNTS = [
-'Paypal Savings',
-'Capital One Savings',
-'Capital One Emergency',
-'Fidelity Cash',
-]
 INCOME_CATEGORIES = [
 	'Cashback',
 	'Salary',
@@ -56,6 +49,7 @@ BALANCES_DIR = './balances/'
 RAW_TRANSACTIONS_DIR = './raw_transactions/'
 TRANSACTION_REPORTS_DIR = './transaction_reports/'
 FINANCE_PATH = '/Users/shane/mcdman Dropbox/shane mcdmonough/finance/'
+BUDGET_BALANCES_SHEET = f"'{FINANCE_PATH}[budget.xlsx]Balances'"
 # unix glob format
 RAW_TRANSACTION_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
 EMPTY = pd.DataFrame({
@@ -684,7 +678,7 @@ class Writer:
 			['Checking Sum (as of the end of the month)', balances_df[~savings]['New Balance'].sum()],
 			['Savings Sum (as of the end of the month)', balances_df[savings]['New Balance'].sum()],
 			['Savings Sum (as of today)', savings_sum_today],
-			['Savings Bank account Sum', f'=SUM({SAVINGS_BANK_SHEET_NAME}!B:B)'],
+			['Savings Bank account Sum', f'={BUDGET_BALANCES_SHEET}!J2'],
 			['Savings Bank account Sum - Savings sum (as of today)', f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}'],
 		])
 		self.write_title('Balances Sums', len(balances_info.columns))
@@ -1117,19 +1111,6 @@ class Writer:
 		)
 		self.sheet.autofit()
 
-	def write_bank_accounts_check(self):
-		'''
-		create a tab used for checking validity of savings acounts against balances
-		'''
-		sheet_name = SAVINGS_BANK_SHEET_NAME
-		table_name = sheet_name + '_table'
-		self.sheet = self.workbook.add_worksheet(sheet_name)
-		self.reset_position();
-		# Reads from the cards xlsx file in the dropbox finance folder
-		self.sheet.write_dynamic_array_formula('A1', f"='{FINANCE_PATH}[budget.xlsx]Balances'!$H$1:$I$5")
-		self.sheet.autofit()
-		self.sheet.hide()
-
 	def focus(self, month: int):
 		'''
 		Focus on a specific sheet when the workbook opens
@@ -1194,7 +1175,6 @@ def main():
 	writer.reset_balances()
 	writer.write_summary_all()
 	writer.write_all_transactions()
-	writer.write_bank_accounts_check()
 	writer.set_year(current_year)
 	writer.focus(now.month)
 	writer.full_screen()
