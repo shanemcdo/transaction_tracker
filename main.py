@@ -55,6 +55,7 @@ BUDGETS_DIR = './budgets/'
 BALANCES_DIR = './balances/'
 RAW_TRANSACTIONS_DIR = './raw_transactions/'
 TRANSACTION_REPORTS_DIR = './transaction_reports/'
+FINANCE_PATH = '/Users/shane/mcdman Dropbox/shane mcdmonough/finance/'
 # unix glob format
 RAW_TRANSACTION_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
 EMPTY = pd.DataFrame({
@@ -1124,21 +1125,10 @@ class Writer:
 		table_name = sheet_name + '_table'
 		self.sheet = self.workbook.add_worksheet(sheet_name)
 		self.reset_position();
-		self.reset_style_count();
-		data = pd.DataFrame({
-			'Bank Accounts': SAVINGS_BANK_ACCOUNTS,
-			'Value': [ 0 ] * len(SAVINGS_BANK_ACCOUNTS),
-		})
-		self.write_table(
-			data,
-			table_name,
-			self.columns(
-				data,
-				{},
-				self.column_currency_kwargs,
-			),
-		)
+		# Reads from the cards xlsx file in the dropbox finance folder
+		self.sheet.write_dynamic_array_formula('A1', f"='{FINANCE_PATH}[cards.xlsx]Balances'!$H$1:$I$5")
 		self.sheet.autofit()
+		self.sheet.hide()
 
 	def focus(self, month: int):
 		'''
