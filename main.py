@@ -668,8 +668,8 @@ class Writer:
 		)
 		# balances sum table
 		savings = balances_df.Account.map(lambda x: x in SAVINGS_ACCOUNTS)
-		checking_sum_today = f'={xl_rowcol_to_cell(self.row + 1, self.column + 1)}'
-		savings_sum_today  = f'={xl_rowcol_to_cell(self.row + 1, self.column + 2)}'
+		checking_sum_today = f'={xl_rowcol_to_cell(self.row + 2, self.column + 1)}'
+		savings_sum_today  = f'={xl_rowcol_to_cell(self.row + 2, self.column + 2)}'
 		for account in accounts:
 			account_table_name = clean_table_name(account)
 			summation_string = f' - SUM(FILTER({sheet_name}{account_table_name}[Amount], {sheet_name}{account_table_name}[Date] > TODAY(), 0))'
@@ -695,16 +695,16 @@ class Writer:
 			],
 			[
 				'Actual - Expected (as of today)',
-				f'={xl_rowcol_to_cell(self.row + 3, self.column + 1)} - {xl_rowcol_to_cell(self.row + 2, self.column + 1)}',
-				f'={xl_rowcol_to_cell(self.row + 3, self.column + 2)} - {xl_rowcol_to_cell(self.row + 2, self.column + 2)}',
+				f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}',
+				f'={xl_rowcol_to_cell(self.row + 4, self.column + 2)} - {xl_rowcol_to_cell(self.row + 3, self.column + 2)}',
 			],
-		], columns = ['', 'Checking', 'Savings'])
+		], columns = [' ', 'Checking', 'Savings'])
 		self.write_title('Balances Sums', len(balances_info.columns))
 		self.write_table(
 			balances_info,
 			sheet_name + 'BalancesSumsTable',
-			[{}, self.column_currency_kwargs, self.column_currency_kwargs],
-			headers = False
+			self.columns(balances_info, {}, self.column_currency_kwargs, self.column_currency_kwargs),
+			headers = True
 		)
 		# Budget Categories Table
 		pivot = default_transactions.pivot_table(
