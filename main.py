@@ -669,7 +669,7 @@ class Writer:
 		# balances sum table
 		savings = balances_df.Account.map(lambda x: x in SAVINGS_ACCOUNTS)
 		checking_sum_today = f'={xl_rowcol_to_cell(self.row + 1, self.column + 1)}'
-		savings_sum_today = f'={xl_rowcol_to_cell(self.row + 5, self.column + 1)}'
+		savings_sum_today  = f'={xl_rowcol_to_cell(self.row + 1, self.column + 2)}'
 		for account in accounts:
 			account_table_name = clean_table_name(account)
 			summation_string = f' - SUM(FILTER({sheet_name}{account_table_name}[Amount], {sheet_name}{account_table_name}[Date] > TODAY(), 0))'
@@ -678,20 +678,32 @@ class Writer:
 			else:
 				checking_sum_today += summation_string
 		balances_info = pd.DataFrame([
-			['Checking Sum (as of the end of the month)', balances_df[~savings]['New Balance'].sum()],
-			['Checking Sum (as of today)', checking_sum_today],
-			['Checking Bank account Sum - Debt', f'={BUDGET_BALANCES_SHEET}!G2'],
-			['Cheking Bank account Sum - Savings sum (as of today)', f'={xl_rowcol_to_cell(self.row + 3, self.column + 1)} - {xl_rowcol_to_cell(self.row + 2, self.column + 1)}'],
-			['Savings Sum (as of the end of the month)', balances_df[savings]['New Balance'].sum()],
-			['Savings Sum (as of today)', savings_sum_today],
-			['Savings Bank account Sum', f'={BUDGET_BALANCES_SHEET}!J2'],
-			['Savings Bank account Sum - Savings sum (as of today)', f'={xl_rowcol_to_cell(self.row + 7, self.column + 1)} - {xl_rowcol_to_cell(self.row + 6, self.column + 1)}'],
-		])
+			[
+				'Expected (as of the end of the month)',
+				balances_df[~savings]['New Balance'].sum(),
+				balances_df[savings]['New Balance'].sum(),
+			],
+			[
+				'Expected (as of today)',
+				checking_sum_today,
+				savings_sum_today,
+			],
+			[
+				'Actual',
+				f'={BUDGET_BALANCES_SHEET}!G2',
+				f'={BUDGET_BALANCES_SHEET}!J2',
+			],
+			[
+				'Actual - Expected (as of today)',
+				f'={xl_rowcol_to_cell(self.row + 3, self.column + 1)} - {xl_rowcol_to_cell(self.row + 2, self.column + 1)}',
+				f'={xl_rowcol_to_cell(self.row + 3, self.column + 2)} - {xl_rowcol_to_cell(self.row + 2, self.column + 2)}',
+			],
+		], columns = ['', 'Checking', 'Savings'])
 		self.write_title('Balances Sums', len(balances_info.columns))
 		self.write_table(
 			balances_info,
 			sheet_name + 'BalancesSumsTable',
-			[{}, self.column_currency_kwargs],
+			[{}, self.column_currency_kwargs, self.column_currency_kwargs],
 			headers = False
 		)
 		# Budget Categories Table
