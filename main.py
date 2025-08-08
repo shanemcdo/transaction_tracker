@@ -668,18 +668,24 @@ class Writer:
 		)
 		# balances sum table
 		savings = balances_df.Account.map(lambda x: x in SAVINGS_ACCOUNTS)
-		savings_sum_today = f'={xl_rowcol_to_cell(self.row + 2, self.column + 1)}'
-		for account in SAVINGS_ACCOUNTS:
-			if account not in accounts:
-				continue
+		checking_sum_today = f'={xl_rowcol_to_cell(self.row + 1, self.column + 1)}'
+		savings_sum_today = f'={xl_rowcol_to_cell(self.row + 5, self.column + 1)}'
+		for account in accounts:
 			account_table_name = clean_table_name(account)
-			savings_sum_today += f' - SUM(FILTER({sheet_name}{account_table_name}[Amount], {sheet_name}{account_table_name}[Date] > TODAY(), 0))'
+			summation_string = f' - SUM(FILTER({sheet_name}{account_table_name}[Amount], {sheet_name}{account_table_name}[Date] > TODAY(), 0))'
+			if account in SAVINGS_ACCOUNTS:
+				savings_sum_today += summation_string
+			else:
+				checking_sum_today += summation_string
 		balances_info = pd.DataFrame([
 			['Checking Sum (as of the end of the month)', balances_df[~savings]['New Balance'].sum()],
+			['Checking Sum (as of today)', checking_sum_today],
+			['Checking Bank account Sum - Debt', f'={BUDGET_BALANCES_SHEET}!G2'],
+			['Cheking Bank account Sum - Savings sum (as of today)', f'={xl_rowcol_to_cell(self.row + 3, self.column + 1)} - {xl_rowcol_to_cell(self.row + 2, self.column + 1)}'],
 			['Savings Sum (as of the end of the month)', balances_df[savings]['New Balance'].sum()],
 			['Savings Sum (as of today)', savings_sum_today],
 			['Savings Bank account Sum', f'={BUDGET_BALANCES_SHEET}!J2'],
-			['Savings Bank account Sum - Savings sum (as of today)', f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}'],
+			['Savings Bank account Sum - Savings sum (as of today)', f'={xl_rowcol_to_cell(self.row + 7, self.column + 1)} - {xl_rowcol_to_cell(self.row + 6, self.column + 1)}'],
 		])
 		self.write_title('Balances Sums', len(balances_info.columns))
 		self.write_table(
