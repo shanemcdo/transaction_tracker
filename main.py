@@ -667,12 +667,12 @@ class Writer:
 			total = True
 		)
 		# balances sum table
+		get_sum_string = lambda tbl: f' - SUM(FILTER({sheet_name}{tbl}[Amount], {sheet_name}{tbl}[Date] > TODAY(), 0))'
 		savings = balances_df.Account.map(lambda x: x in SAVINGS_ACCOUNTS)
-		checking_sum_today = f'={xl_rowcol_to_cell(self.row + 2, self.column + 1)}'
+		checking_sum_today = f'={xl_rowcol_to_cell(self.row + 2, self.column + 1)}' + get_sum_string(clean_table_name(DEFAULT_ACCOUNT + ' Income'))
 		savings_sum_today  = f'={xl_rowcol_to_cell(self.row + 2, self.column + 2)}'
 		for account in accounts:
-			account_table_name = clean_table_name(account)
-			summation_string = f' - SUM(FILTER({sheet_name}{account_table_name}[Amount], {sheet_name}{account_table_name}[Date] > TODAY(), 0))'
+			summation_string = get_sum_string(clean_table_name(account))
 			if account in SAVINGS_ACCOUNTS:
 				savings_sum_today += summation_string
 			else:
