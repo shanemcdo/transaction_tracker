@@ -9,6 +9,7 @@ import pandas as pd
 from glob import glob
 import json
 from functools import reduce
+from itertools import chain
 
 # names of accounts in balances that are stored in savings accounts
 SAVINGS_ACCOUNTS = [
@@ -669,9 +670,9 @@ class Writer:
 		# balances sum table
 		get_sum_string = lambda tbl: f' - SUM(FILTER({sheet_name}{tbl}[Amount], {sheet_name}{tbl}[Date] > TODAY(), 0))'
 		savings = balances_df.Account.map(lambda x: x in SAVINGS_ACCOUNTS)
-		checking_sum_today = f'={xl_rowcol_to_cell(self.row + 2, self.column + 1)}' + get_sum_string(clean_table_name(DEFAULT_ACCOUNT + ' Income'))
+		checking_sum_today = f'={xl_rowcol_to_cell(self.row + 2, self.column + 1)}'
 		savings_sum_today  = f'={xl_rowcol_to_cell(self.row + 2, self.column + 2)}'
-		for account in accounts:
+		for account in chain(accounts, [ DEFAULT_ACCOUNT + ' Income' ]):
 			summation_string = get_sum_string(clean_table_name(account))
 			if account in SAVINGS_ACCOUNTS:
 				savings_sum_today += summation_string
