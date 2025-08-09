@@ -681,7 +681,7 @@ class Writer:
 		balances_info = pd.DataFrame([
 			[
 				'Expected (as of the end of the month)',
-				balances_df[~savings]['New Balance'].sum(),
+				balances_df[~savings]['New Balance'].sum() + default_income_transactions.Amount.sum() - default_transactions.Amount.sum(),
 				balances_df[savings]['New Balance'].sum(),
 			],
 			[
