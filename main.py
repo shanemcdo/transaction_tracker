@@ -13,11 +13,11 @@ from itertools import chain
 
 # names of accounts in balances that are stored in savings accounts
 SAVINGS_ACCOUNTS = [
-'Car Repair',
-'Discretionary Savings',
-'Emergency',
-'Wedding',
-'Honeymoon',
+	'Car Repair',
+	'Discretionary Savings',
+	'Emergency',
+	'Wedding',
+	'Honeymoon',
 ]
 INCOME_CATEGORIES = [
 	'Cashback',
