@@ -17,6 +17,7 @@ SAVINGS_ACCOUNTS = [
 'Discretionary Savings',
 'Emergency',
 'Wedding',
+'Honeymoon',
 ]
 INCOME_CATEGORIES = [
 	'Cashback',
