@@ -1006,7 +1006,19 @@ class Writer:
 		if month not in (13, 14):
 			self.go_to_next()
 		# charts
-		for i, value_field in enumerate(('Amount', 'Transaction Count', 'CashBack Reward' )):
+		for i, account in enumerate(chain(['All'], all_expenses_no_transfers.Account.sort_values().unique())):
+			self.write_chart_at(
+				f'{account} Spending by Category',
+				'pie',
+				category_account_pivot_name,
+				self.row,
+				self.column,
+				'Category',
+				account,
+				0,
+				i
+			)
+		for i, value_field in enumerate(('Amount', 'Transaction Count', 'CashBack Reward' ), 1):
 			for j, (category_field, table_name, chart_type, show_value) in enumerate((
 				('Category', cat_table_name, 'pie', True),
 				('Account', account_table_name, 'pie', True),
