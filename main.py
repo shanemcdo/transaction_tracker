@@ -401,15 +401,15 @@ class Writer:
 		'''
 		chart = self.workbook.add_chart({ 'type': chart_type })
 		chart.set_title({ 'name': name })
-		chart.set_legend({ 'position': 'none' })
+		chart.set_legend({ 'position': 'none' if chart_type != 'pie' else 'right'})
 		chart.add_series({
 			'categories': f'={table_name}[{categories_field}]',
 			'values': f'={table_name}[{values_field}]',
 			'data_labels': {
-				'category': chart_type == 'pie',
-				'value': show_value,
+				'value': show_value and chart_type != 'pie',
 				'percentage': True,
-				'position': 'best_fit' if chart_type == 'pie' else 'outside_end'
+				'position': 'best_fit' if chart_type == 'pie' else 'outside_end',
+				'num_format': '0.00%;;;',
 			}
 		})
 		chart.set_size({
