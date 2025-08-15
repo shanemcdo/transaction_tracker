@@ -967,11 +967,14 @@ class Writer:
 			aggfunc = 'sum',
 			margins = True,
 		).reset_index().fillna(0)
+		pivot = pivot[pivot.Category != 'All']
+		category_account_pivot_name = sheet_name + 'CategoryAccountPivot'
 		self.write_title('Category / Account Pivot (excluding transfers)', len(pivot.columns))
 		self.write_table(
 			pivot,
-			sheet_name + 'CategoryAccountPivot',
-			self.columns(pivot, *([ self.column_currency_kwargs ] * len(pivot.columns)))
+			category_account_pivot_name,
+			self.columns(pivot, *([ {} ] + [ self.column_currency_kwargs ] * (len(pivot.columns) - 1))),
+			True,
 		)
 		self.go_to_next()
 		self.sheet.autofit()
