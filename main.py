@@ -924,10 +924,10 @@ class Writer:
 		cashback_sum = all_expenses['CashBack Reward'].sum()
 		eligible_expenses_sum = eligible_expenses.Amount.sum()
 		cashback_info = pd.DataFrame({
-			'Eligible Spending Sum (No transfers / investing)': [ eligible_expenses_sum ],
+			'Spending - transfers & investing': [ eligible_expenses_sum ],
 			'Cashback Sum': [ cashback_sum ],
-			'Average cashback yield': [ cashback_sum / eligible_expenses_sum ],
-			'Average cashback yield excluding 0% cashback': [ cashback_sum / pivot[pivot['CashBack %'] != 0].Amount.sum() ],
+			'AVG cashback': [ cashback_sum / eligible_expenses_sum ],
+			'AVG cashback - 0%': [ cashback_sum / pivot[pivot['CashBack %'] != 0].Amount.sum() ],
 		})
 		self.write_title('Cashback Info', len(cashback_info.columns))
 		self.write_table(
