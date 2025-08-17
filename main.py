@@ -151,9 +151,10 @@ class Writer:
 		self.column_currency_kwargs = { 'format': self.formats['currency'], **self.column_total_sum_kwargs }
 		self.column_total_kwargs = { 'total_string': 'Total' }
 		self.column_date_kwargs = { 'format': self.formats['date'] }
+		self.column_total_date_kwargs = { **self.column_total_kwargs, **self.column_date_kwargs }
 		self.column_percent_kwargs = { 'format': self.formats['percent'] }
 		self.pivot_kwargs = { 'values': [ 'Amount', 'CashBack Reward'], 'aggfunc': 'sum' }
-		self.pivot_columns_args = self.column_currency_kwargs, self.column_currency_kwargs, {}
+		self.pivot_columns_args = self.column_currency_kwargs, self.column_currency_kwargs, self.column_total_sum_kwargs
 
 	def reset_position(self):
 		'''
@@ -583,13 +584,12 @@ class Writer:
 				sheet_name + clean_table_name(table_name),
 				self.columns(
 					default_transactions,
-					{ **self.column_total_kwargs, **self.column_date_kwargs },
+					self.column_total_date_kwargs,
 					{},
-					self.column_currency_kwargs,
+					{},
 					{},
 					{},
 					self.column_percent_kwargs,
-					self.column_currency_kwargs,
 				),
 				total=True
 			)
@@ -644,7 +644,7 @@ class Writer:
 		self.write_table(
 			budget_info,
 			sheet_name + 'BudgetTable',
-			self.columns(budget_info, {}, self.column_currency_kwargs, self.column_currency_kwargs),
+			self.columns(budget_info),
 			headers = month in (13, 14)
 		)
 		# balances
@@ -672,10 +672,10 @@ class Writer:
 			self.columns(
 				balances_df,
 				{},
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
+				{},
+				{},
+				{},
+				{},
 				self.column_total_sum_kwargs,
 			),
 			total = True
@@ -721,6 +721,7 @@ class Writer:
 		self.write_table(
 			balances_info,
 			sheet_name + 'BalancesSumsTable',
+			# required to be explicit because formulas aren't listed as int/float
 			self.columns(balances_info, {}, self.column_currency_kwargs, self.column_currency_kwargs, self.column_currency_kwargs),
 			headers = True
 		)
@@ -762,11 +763,11 @@ class Writer:
 			self.columns(
 				budget_categories_df,
 				{},
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
+				{},
+				{},
+				{},
 				self.column_percent_kwargs,
-				self.column_currency_kwargs,
+				{},
 				self.column_total_sum_kwargs,
 			),
 			True
@@ -785,7 +786,7 @@ class Writer:
 		})
 		# transfers table
 		transfer_max = income_sum - budget_categories_df.Amount.sum()
-		transfer_sum = pivot.loc[pivot.Category == 'Transfer', 'Amount']
+		transfer_sum = default_transactions.loc[default_transactions.Category == 'Transfer', 'Amount'].sum()
 		transfers_df = pd.DataFrame(data = {
 			'Expected (Income - Expected)': [income_sum - budget_categories_df.Expected.sum()],
 			'Max (Income - Spend)':         [transfer_max],
@@ -802,10 +803,10 @@ class Writer:
 			transfers_table_name,
 			self.columns(
 				transfers_df,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
+				{},
+				{},
+				{},
+				{},
 				self.column_percent_kwargs,
 				self.column_total_sum_kwargs,
 			),
@@ -851,10 +852,10 @@ class Writer:
 			self.columns(
 				reimbursement_df,
 				{},
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
+				{},
+				{},
+				{},
+				{},
 				self.column_total_sum_kwargs,
 			),
 			True
@@ -887,10 +888,10 @@ class Writer:
 			self.columns(
 				reimbursement_df,
 				{},
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
+				{},
+				{},
+				{},
+				{},
 				self.column_total_sum_kwargs,
 			),
 			True
@@ -947,8 +948,8 @@ class Writer:
 			sheet_name + 'CashBackInfoTable',
 			self.columns(
 				cashback_info,
-				self.column_currency_kwargs,
-				self.column_currency_kwargs,
+				{},
+				{},
 				self.column_percent_kwargs,
 				self.column_percent_kwargs,
 			)
@@ -989,7 +990,7 @@ class Writer:
 		self.write_table(
 			pivot,
 			category_account_pivot_name,
-			self.columns(pivot, *([ {} ] + [ self.column_currency_kwargs ] * (len(pivot.columns) - 1))),
+			self.columns(pivot),
 			True,
 		)
 		self.go_to_next()
@@ -1109,13 +1110,12 @@ class Writer:
 			table_name,
 			self.columns(
 				data,
-				{ 'total_string': 'Total', 'format': self.formats['date'] },
-				{},
-				{ 'total_function': 'sum', 'format': self.formats['currency'] },
+				self.column_total_date_kwargs,
 				{},
 				{},
-				{ 'format': self.formats['percent'] },
-				{ 'total_function': 'sum', 'format': self.formats['currency'] }
+				{},
+				{},
+				self.column_percent_kwargs,
 			),
 			total = True
 		)
