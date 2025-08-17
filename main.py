@@ -684,28 +684,32 @@ class Writer:
 				'Expected (as of the end of the month)',
 				balances_df[~savings]['New Balance'].sum() + default_income_transactions.Amount.sum() - default_transactions.Amount.sum(),
 				balances_df[savings]['New Balance'].sum(),
+				'N/A',
 			],
 			[
 				'Expected (as of today)',
 				checking_sum_today,
 				savings_sum_today,
+				'N/A',
 			],
 			[
 				'Actual',
 				f'={BUDGET_BALANCES_SHEET}!G2',
 				f'={BUDGET_BALANCES_SHEET}!J2',
+				f'={BUDGET_BALANCES_SHEET}!S2',
 			],
 			[
 				'Actual - Expected (as of today)',
 				f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}',
 				f'={xl_rowcol_to_cell(self.row + 4, self.column + 2)} - {xl_rowcol_to_cell(self.row + 3, self.column + 2)}',
+				'N/A',
 			],
-		], columns = [' ', 'Checking', 'Savings'])
+		], columns = [' ', 'Checking', 'Savings', 'Investments'])
 		self.write_title('Balances Sums', len(balances_info.columns))
 		self.write_table(
 			balances_info,
 			sheet_name + 'BalancesSumsTable',
-			self.columns(balances_info, {}, self.column_currency_kwargs, self.column_currency_kwargs),
+			self.columns(balances_info, {}, self.column_currency_kwargs, self.column_currency_kwargs, self.column_currency_kwargs),
 			headers = True
 		)
 		# Budget Categories Table
