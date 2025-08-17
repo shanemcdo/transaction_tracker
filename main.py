@@ -6,6 +6,7 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 from datetime import datetime
 import calendar
 import pandas as pd
+from pandas.api.types import is_dtype_equal
 from glob import glob
 import json
 from functools import reduce
@@ -312,17 +313,28 @@ class Writer:
 		self.monthly_budget[self.year][month] = self.get_budget_df(month)
 		return data
 
-	@staticmethod
-	def columns(df: pd.DataFrame, *column_kwargs_list: dict) -> list[dict]:
+	def columns(self, df: pd.DataFrame, *column_kwargs_list: dict) -> list[dict]:
 		'''
 		:df: data where column names are taken from
 		:column_kwargs_list: additional kwargs for each respective column
 		:return: a list of inputted kwargs combined with column names
 		'''
-		return [
-			{ 'header': column, **column_kwargs }
-			for column, column_kwargs in zip(df.columns, column_kwargs_list)
-		]
+		result = []
+		kwarg_count = len(column_kwargs_list)
+		for i, (column, dtype) in enumerate(zip(df.columns, df.dtypes)):
+			column_kwargs = column_kwargs_list[i] if i < kwarg_count else None
+			if column_kwargs is None or len(column_kwargs) == 0:
+				if dtype == int or dtype == float:
+					column_kwargs = self.column_currency_kwargs
+				else:
+					column_kwargs = {}
+			else:
+				column_kwargs = column_kwargs_list[i]
+			result.append({
+				'header': column,
+				**column_kwargs
+			})
+		return result
 
 	def write_table(self, data: pd.DataFrame, table_name: str, columns: list[dict], total: bool = False, headers: bool = True):
 		'''
