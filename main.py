@@ -697,11 +697,13 @@ class Writer:
 				balances_df[~savings]['New Balance'].sum() + default_income_transactions.Amount.sum() - default_transactions.Amount.sum(),
 				balances_df[savings]['New Balance'].sum(),
 				'N/A',
+				'N/A',
 			],
 			[
 				'Expected (as of today)',
 				checking_sum_today,
 				savings_sum_today,
+				'N/A',
 				'N/A',
 			],
 			[
@@ -709,20 +711,22 @@ class Writer:
 				f'={BUDGET_BALANCES_SHEET}!G2',
 				f'={BUDGET_BALANCES_SHEET}!J2',
 				f'={BUDGET_BALANCES_SHEET}!S2',
+				f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} + {xl_rowcol_to_cell(self.row + 4, self.column + 2)} + {xl_rowcol_to_cell(self.row + 4, self.column + 3)}'
 			],
 			[
 				'Actual - Expected (as of today)',
 				f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}',
 				f'={xl_rowcol_to_cell(self.row + 4, self.column + 2)} - {xl_rowcol_to_cell(self.row + 3, self.column + 2)}',
 				'N/A',
+				'N/A',
 			],
-		], columns = [' ', 'Checking', 'Savings', 'Investments'])
+		], columns = [' ', 'Checking', 'Savings', 'Investments', 'Total'])
 		self.write_title('Balances Sums', len(balances_info.columns))
 		self.write_table(
 			balances_info,
 			sheet_name + 'BalancesSumsTable',
 			# required to be explicit because formulas aren't listed as int/float
-			self.columns(balances_info, {}, self.column_currency_kwargs, self.column_currency_kwargs, self.column_currency_kwargs),
+			self.columns(balances_info, {}, self.column_currency_kwargs, self.column_currency_kwargs, self.column_currency_kwargs, self.column_currency_kwargs),
 			headers = True
 		)
 		# Budget Categories Table
