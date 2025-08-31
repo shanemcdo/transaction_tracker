@@ -1,0 +1,7 @@
+#!/bin/bash
+
+dir=./budgets/
+now=`date +%Y%m`
+next=$(( now + 1 ))
+
+cp -v "$dir${now}budget.csv" "$dir${next}budget.csv"
