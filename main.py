@@ -847,21 +847,32 @@ class Writer:
 					i += 1
 				dates_by_week[i].add(day)
 				day += datetime.timedelta(days = 1)
+			week_count = i + 1
+			today = datetime.date.today()
 			rows = []
+			expected = 'N/A'
 			for i, dates in enumerate(dates_by_week, 1):
-				condition = default_transactions.Date.map(lambda x: x in dates) & (default_transactions.Category == 'Groceries')
+				is_groceries = default_transactions.Category == 'Groceries'
+				condition = default_transactions.Date.map(lambda x: x in dates) & is_groceries
+				amount_sum = default_transactions[condition].Amount.sum()
+				if amount_sum == 0 and expected == 'N/A' and today < max(dates):
+					expected = (
+							budget[budget.Category == 'Groceries'].Expected.sum()
+							- default_transactions[is_groceries].Amount.sum()
+						) / (week_count - i + 1)
 				rows.append([
 					f'week {i}: {stringify_date(min(dates).day)} - {stringify_date(max(dates).day)}',
-					default_transactions[condition].Amount.sum(),
+					amount_sum,
+					expected,
 					default_transactions[condition]['CashBack Reward'].sum(),
 					len(default_transactions[condition]),
 				])
-			grocery_spend = pd.DataFrame(rows, columns = ('Week', 'Amount', 'Cashback Reward', 'Transaction Count'))
+			grocery_spend = pd.DataFrame(rows, columns = ('Week', 'Amount', 'Expected', 'Cashback Reward', 'Transaction Count'))
 			self.write_title(f'{DEFAULT_ACCOUNT} Weekly Grocery Spend', len(grocery_spend.columns))
 			self.write_table(
 				grocery_spend,
 				sheet_name + 'grocery_spend',
-				self.columns(grocery_spend, {}, {}, {}, self.column_total_sum_kwargs),
+				self.columns(grocery_spend, {}, {}, self.column_currency_kwargs, {}, self.column_total_sum_kwargs),
 				total = True,
 			)
 		# category pivot & reimbursement/refund table
