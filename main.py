@@ -3,7 +3,7 @@
 import os
 import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell
-from datetime import datetime
+import datetime
 import calendar
 import pandas as pd
 from pandas.api.types import is_dtype_equal
@@ -70,10 +70,10 @@ DEFAULT_ACCOUNT = 'Default'
 STARTING_YEAR = 2024
 
 def get_year() -> int:
-	return datetime.now().year
+	return datetime.datetime.now().year
 
-def parse_date(date: str) -> datetime:
-	return datetime.strptime(date, '%m/%d/%Y')
+def parse_date(date: str) -> datetime.datetime:
+	return datetime.datetime.strptime(date, '%m/%d/%Y').date()
 
 def stringify_date(day: int) -> str:
 	if day < 1:
@@ -828,6 +828,43 @@ class Writer:
 			'max_type': 'num',
 			'max_value': 1,
 		})
+		# Grocery Spend table
+		if month not in (13, 14):
+			if month == 12:
+				end_year = self.year + 1
+				end_month = 1
+			else:
+				end_year = self.year
+				end_month = month + 1
+			end_date = datetime.date(end_year, end_month, 1)
+			day = datetime.date(self.year, month, 1)
+			i = 0
+			dates_by_week = [set()]
+			while day < end_date:
+				# 6 is sunday
+				if day.weekday() == 6 and day.day != 1:
+					dates_by_week.append(set())
+					i += 1
+				dates_by_week[i].add(day)
+				day += datetime.timedelta(days = 1)
+			grocery_spend = pd.DataFrame([
+				[
+					f'week {i}: {stringify_date(min(dates).day)} - {stringify_date(max(dates).day)}',
+					default_transactions[
+						default_transactions.Date.map(lambda x: x in dates)
+						& (default_transactions.Category == 'Groceries')
+					].Amount.sum()
+				]
+				for i, dates in enumerate(dates_by_week, 1)
+			], columns = ('A', 'B'))
+			self.write_title(f'{DEFAULT_ACCOUNT} Grocery Spend', len(grocery_spend.columns))
+			self.write_table(
+				grocery_spend,
+				sheet_name + 'grocery_spend',
+				self.columns(grocery_spend),
+				total = True,
+				headers = False
+			)
 		# category pivot & reimbursement/refund table
 		pivot = all_expenses.pivot_table(
 			index = 'Category',
@@ -1210,7 +1247,7 @@ class Writer:
 
 def main():
 	'''Driver Code'''
-	now = datetime.now()
+	now = datetime.datetime.now()
 	datestring = now.strftime('%Y%m%d %H%M%S')
 	calendar.setfirstweekday(calendar.SUNDAY)
 	current_year = get_year()
