@@ -847,24 +847,16 @@ class Writer:
 					i += 1
 				dates_by_week[i].add(day)
 				day += datetime.timedelta(days = 1)
-			grocery_spend = pd.DataFrame([
-				[
+			rows = []
+			for i, dates in enumerate(dates_by_week, 1):
+				condition = default_transactions.Date.map(lambda x: x in dates) & (default_transactions.Category == 'Groceries')
+				rows.append([
 					f'week {i}: {stringify_date(min(dates).day)} - {stringify_date(max(dates).day)}',
-					default_transactions[
-						default_transactions.Date.map(lambda x: x in dates)
-						& (default_transactions.Category == 'Groceries')
-					].Amount.sum(),
-					default_transactions[
-						default_transactions.Date.map(lambda x: x in dates)
-						& (default_transactions.Category == 'Groceries')
-					]['CashBack Reward'].sum(),
-					len(default_transactions[
-						default_transactions.Date.map(lambda x: x in dates)
-						& (default_transactions.Category == 'Groceries')
-					])
-				]
-				for i, dates in enumerate(dates_by_week, 1)
-			], columns = ('Week', 'Amount', 'Cashback Reward', 'Transaction Count'))
+					default_transactions[condition].Amount.sum(),
+					default_transactions[condition]['CashBack Reward'].sum(),
+					len(default_transactions[condition]),
+				])
+			grocery_spend = pd.DataFrame(rows, columns = ('Week', 'Amount', 'Cashback Reward', 'Transaction Count'))
 			self.write_title(f'{DEFAULT_ACCOUNT} Grocery Spend', len(grocery_spend.columns))
 			self.write_table(
 				grocery_spend,
