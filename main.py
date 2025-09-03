@@ -864,24 +864,6 @@ class Writer:
 				self.columns(grocery_spend, {}, {}, {}, self.column_total_sum_kwargs),
 				total = True,
 			)
-			# all weekly spend
-			rows = []
-			for i, dates in enumerate(dates_by_week, 1):
-				condition = all_expenses.Date.map(lambda x: x in dates)
-				rows.append([
-					f'week {i}: {stringify_date(min(dates).day)} - {stringify_date(max(dates).day)}',
-					all_expenses[condition].Amount.sum(),
-					all_expenses[condition]['CashBack Reward'].sum(),
-					len(all_expenses[condition]),
-				])
-			weekly_spend = pd.DataFrame(rows, columns = ('Week', 'Amount', 'Cashback Reward', 'Transaction Count'))
-			self.write_title('All Weekly Spend', len(weekly_spend.columns))
-			self.write_table(
-				weekly_spend,
-				sheet_name + 'weekly_spend',
-				self.columns(weekly_spend, {}, {}, {}, self.column_total_sum_kwargs),
-				total = True,
-			)
 		# category pivot & reimbursement/refund table
 		pivot = all_expenses.pivot_table(
 			index = 'Category',
