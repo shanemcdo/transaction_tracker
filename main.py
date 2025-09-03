@@ -828,7 +828,7 @@ class Writer:
 			'max_type': 'num',
 			'max_value': 1,
 		})
-		# Grocery Spend table
+		# default weekly Grocery Spend table
 		if month not in (13, 14):
 			if month == 12:
 				end_year = self.year + 1
@@ -857,7 +857,7 @@ class Writer:
 					len(default_transactions[condition]),
 				])
 			grocery_spend = pd.DataFrame(rows, columns = ('Week', 'Amount', 'Cashback Reward', 'Transaction Count'))
-			self.write_title(f'{DEFAULT_ACCOUNT} Grocery Spend', len(grocery_spend.columns))
+			self.write_title(f'{DEFAULT_ACCOUNT} Weekly Grocery Spend', len(grocery_spend.columns))
 			self.write_table(
 				grocery_spend,
 				sheet_name + 'grocery_spend',
