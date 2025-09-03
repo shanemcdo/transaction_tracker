@@ -838,14 +838,14 @@ class Writer:
 				end_month = month + 1
 			end_date = datetime.date(end_year, end_month, 1)
 			day = datetime.date(self.year, month, 1)
-			i = 0
+			week_count = 0
 			dates_by_week = [set()]
 			while day < end_date:
 				# 6 is sunday
 				if day.weekday() == 6 and day.day != 1:
 					dates_by_week.append(set())
-					i += 1
-				dates_by_week[i].add(day)
+					week_count += 1
+				dates_by_week[week_count].add(day)
 				day += datetime.timedelta(days = 1)
 			rows = []
 			for i, dates in enumerate(dates_by_week, 1):
