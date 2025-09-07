@@ -527,7 +527,7 @@ class Writer:
 		for row in calendar.monthcalendar(self.year, month):
 			cal.append(map(stringify_date, row))
 			cal.append((
-				data.loc[data.Date == f'{month:02d}/{cell:02d}/{self.year:04d}', 'Amount'].sum()
+				data.loc[data.Date == datetime.date(self.year, month, cell), 'Amount'].sum()
 				if cell != 0 else ''
 				for cell in row
 			))
