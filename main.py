@@ -872,7 +872,7 @@ class Writer:
 			self.write_title(f'{DEFAULT_ACCOUNT} Weekly {category} Spend', len(weekly_spend.columns))
 			self.write_table(
 				weekly_spend,
-				sheet_name + category + '_spend',
+				clean_table_name(sheet_name + category + '_spend'),
 				self.columns(weekly_spend, {}, {}, self.column_currency_kwargs, {}, self.column_total_sum_kwargs),
 				total = True,
 			)
