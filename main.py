@@ -829,7 +829,8 @@ class Writer:
 			'max_value': 1,
 		})
 		# default weekly Grocery Spend table
-		if month not in (13, 14):
+		def write_weekly_spend_table(category: str):
+			'''Create a weekly spend table for the given category'''
 			if month == 12:
 				end_year = self.year + 1
 				end_month = 1
@@ -852,12 +853,12 @@ class Writer:
 			rows = []
 			expected = 'N/A'
 			for i, dates in enumerate(dates_by_week, 1):
-				is_groceries = default_transactions.Category == 'Groceries'
+				is_groceries = default_transactions.Category == category
 				condition = default_transactions.Date.map(lambda x: x in dates) & is_groceries
 				amount_sum = default_transactions[condition].Amount.sum()
 				if amount_sum == 0 and expected == 'N/A' and today < max(dates):
 					expected = (
-							budget[budget.Category == 'Groceries'].Expected.sum()
+							budget[budget.Category == category].Expected.sum()
 							- default_transactions[is_groceries].Amount.sum()
 						) / (week_count - i + 1)
 				rows.append([
@@ -867,14 +868,16 @@ class Writer:
 					default_transactions[condition]['CashBack Reward'].sum(),
 					len(default_transactions[condition]),
 				])
-			grocery_spend = pd.DataFrame(rows, columns = ('Week', 'Amount', 'Expected', 'Cashback Reward', 'Transaction Count'))
-			self.write_title(f'{DEFAULT_ACCOUNT} Weekly Grocery Spend', len(grocery_spend.columns))
+			weekly_spend = pd.DataFrame(rows, columns = ('Week', 'Amount', 'Expected', 'Cashback Reward', 'Transaction Count'))
+			self.write_title(f'{DEFAULT_ACCOUNT} Weekly {category} Spend', len(weekly_spend.columns))
 			self.write_table(
-				grocery_spend,
-				sheet_name + 'grocery_spend',
-				self.columns(grocery_spend, {}, {}, self.column_currency_kwargs, {}, self.column_total_sum_kwargs),
+				weekly_spend,
+				sheet_name + category + '_spend',
+				self.columns(weekly_spend, {}, {}, self.column_currency_kwargs, {}, self.column_total_sum_kwargs),
 				total = True,
 			)
+		if month not in (13, 14):
+			write_weekly_spend_table('Groceries')
 		# category pivot & reimbursement/refund table
 		pivot = all_expenses.pivot_table(
 			index = 'Category',
