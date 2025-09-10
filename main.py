@@ -878,6 +878,7 @@ class Writer:
 			)
 		if month not in (13, 14):
 			write_weekly_spend_table('Groceries')
+			write_weekly_spend_table('Eating Out')
 		# category pivot & reimbursement/refund table
 		pivot = all_expenses.pivot_table(
 			index = 'Category',
