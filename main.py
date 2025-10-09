@@ -11,26 +11,9 @@ from glob import glob
 import json
 from functools import reduce
 from itertools import chain
+from dotenv import load_dotenv
 
 # names of accounts in balances that are stored in savings accounts
-SAVINGS_ACCOUNTS = [
-	'Car Repair',
-	'Discretionary Savings',
-	'Emergency',
-	'Wedding',
-	'Honeymoon',
-]
-INCOME_CATEGORIES = [
-	'Cashback',
-	'Salary',
-	'Fatherly Support',
-	'Check',
-	'Reward',
-	'Sale',
-	'Carry Over',
-	'Interest',
-	'Gift',
-]
 MONTHS = {
 	1: 'January',
 	2: 'February',
@@ -47,14 +30,21 @@ MONTHS = {
 	13: 'Whole Year'
 }
 MONTHS_SHORT = { key: value[:3] for key, value in MONTHS.items() }
-BUDGETS_DIR = './budgets/'
-BALANCES_DIR = './balances/'
-RAW_TRANSACTIONS_DIR = './raw_transactions/'
-TRANSACTION_REPORTS_DIR = './transaction_reports/'
-FINANCE_PATH = '/Users/shane/mcdman Dropbox/shane mcdmonough/finance/'
-BUDGET_BALANCES_SHEET = f"'{FINANCE_PATH}[budget.xlsx]Balances'"
+load_dotenv()
+SAVINGS_ACCOUNTS = os.getenv('SAVINGS_ACCOUNTS').split(',')
+INCOME_CATEGORIES = os.getenv('INCOME_CATEGORIES').split(',')
+BUDGETS_DIR = os.getenv('BUDGETS_DIR')
+BALANCES_DIR = os.getenv('BALANCES_DIR')
+RAW_TRANSACTIONS_DIR = os.getenv('RAW_TRANSACTIONS_DIR')
+TRANSACTION_REPORTS_DIR = os.getenv('TRANSACTION_REPORTS_DIR')
+FINANCE_PATH = os.getenv('FINANCE_PATH')
+BUDGET_BALANCES_SHEET = os.getenv('BUDGET_BALANCES_SHEET')
 # unix glob format
-RAW_TRANSACTION_FILENAME_FORMAT = 'Transactions {0} 1, {1} - {0} ??, {1}*.csv'
+RAW_TRANSACTION_FILENAME_FORMAT = os.getenv('RAW_TRANSACTION_FILENAME_FORMAT')
+STARTING_STYLE_COUNT = int(os.getenv('STARTING_STYLE_COUNT'))
+ENDING_STYLE_COUNT = int(os.getenv('ENDING_STYLE_COUNT'))
+STARTING_YEAR = int(os.getenv('STARTING_YEAR'))
+DEFAULT_ACCOUNT = os.getenv('DEFAULT_ACCOUNT')
 EMPTY = pd.DataFrame({
 	'Date': [],
 	'Category': [],
@@ -64,10 +54,6 @@ EMPTY = pd.DataFrame({
 	'CashBack Reward': [],
 	'Account': [],
 })
-STARTING_STYLE_COUNT = 9
-ENDING_STYLE_COUNT = 14
-DEFAULT_ACCOUNT = 'Default'
-STARTING_YEAR = 2024
 
 def get_year() -> int:
 	return datetime.datetime.now().year
