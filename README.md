@@ -1,19 +1,18 @@
 # Transaction Tracker
 
-This creates an 
-
-###excel file using the transactions from "Spending Tracker"
+This creates an excel file using the transactions from ["Spending Tracker"](https://apps.apple.com/us/app/spending-tracker/id548615579)
+link
 
 ## Input
 
 ### .env
 
-This contains settings such as various directory paths, style counts, starting year, etc.
+The `.env` file contains settings such as various directory paths, style counts, starting year, etc.
 
 ### Transactions
 
-Looks for raw CSV data in the $RAW_TRANSACTION_DIR directory.
-The file name should match the $RAW_TRANSACTION_FILENAME_FORMAT.
+Looks for raw CSV data in the `$RAW_TRANSACTION_DIR` directory.
+The file name should match the `$RAW_TRANSACTION_FILENAME_FORMAT`.
 
 expects a csv file with 4 columns representing date, category, ammount, and note
 
@@ -24,12 +23,12 @@ Date,Category,Amount,Note,Account
 optionally if note contains a `|` then it will be split and the right side will be read
 as cashback percentage.
 
-the account $DEFAULT_ACCOUNT is a monthly budget and other accounts are for earmarked categories such as "Emergency".
+the account `$DEFAULT_ACCOUNT` is a monthly budget and other accounts are for earmarked categories such as "Emergency".
 
 ### Budgets
 
-Looks in the $BUDGETS_DIR folder.
-The file name should match YYYYMMbudget.csv.
+Looks in the `$BUDGETS_DIR` folder.
+The file name should match `YYYYMMbudget.csv`.
 
 This program expects a 2 column format with Category and Expected spend.
 
@@ -45,8 +44,8 @@ Other,200.0
 
 ### Balances
 
-Looks in the $BALANCES_DIR folder.
-The file name should match starting_balancesYYYY.json.
+Looks in the `$BALANCES_DIR` folder.
+The file name should match `starting_balancesYYYY.json`.
 A new one of these does not need to be created for every year.
 Only when you start using this application you have already existing balances that need to be accounted for does this need to be created.
 
@@ -61,7 +60,7 @@ example:
 
 ## output
 
-writes files in the $TRANSACTIONS_REPORTS_DIR folder.
+writes files in the `$TRANSACTIONS_REPORTS_DIR` folder.
 
 The output created is of the name `transactions YYYYmmdd HHMMSS.xlsx`.
 
@@ -73,5 +72,5 @@ An excel file is created.
 - Then use `source /venv/bin/activate` to activate it.
 - then use `pip3 install -r requirements.txt` to install the requirements.
 - This is only required once.
-- Modify the .env for a path that works
+- Modify the .env to customize paths and names.
 - use `./main.py` or `./run` in order to run the program.
