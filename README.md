@@ -1,19 +1,19 @@
 # Transaction Tracker
 
-This creates an excel file using the transactions from "Spending Tracker"
+This creates an 
+
+###excel file using the transactions from "Spending Tracker"
 
 ## Input
 
-Looks for files in the `./in` folder. It is recommended to use symbolic links to 
-point to the input file folder.
+### .env
 
-### File Name
+This contains settings such as various directory paths, style counts, starting year, etc.
 
-the input expects `Transactions Mmm 1, YYYY - Mmm ??, YYYY *.csv` format.
+### Transactions
 
-e.g. `Transactions Jan 1, 2024 - Jan 31, 2024 (1).csv`
-
-### File Format
+Looks for raw CSV data in the $RAW_TRANSACTION_DIR directory.
+The file name should match the $RAW_TRANSACTION_FILENAME_FORMAT.
 
 expects a csv file with 4 columns representing date, category, ammount, and note
 
@@ -24,19 +24,48 @@ Date,Category,Amount,Note,Account
 optionally if note contains a `|` then it will be split and the right side will be read
 as cashback percentage.
 
-the account `Default` is a monthly budget and other accounts are for earmarked categories such as "Emergency".
+the account $DEFAULT_ACCOUNT is a monthly budget and other accounts are for earmarked categories such as "Emergency".
+
+### Budgets
+
+Looks in the $BUDGETS_DIR folder.
+The file name should match YYYYMMbudget.csv.
+
+This program expects a 2 column format with Category and Expected spend.
+
+example:
+```
+Category,Expected
+Rent & Utilities,2000.0
+Fuel,150.0
+Groceries,500.0
+Eating Out,300.0
+Other,200.0
+```
+
+### Balances
+
+Looks in the $BALANCES_DIR folder.
+The file name should match starting_balancesYYYY.json.
+A new one of these does not need to be created for every year.
+Only when you start using this application you have already existing balances that need to be accounted for does this need to be created.
+
+example:
+```
+{
+    "Emergency": 1000,
+    "Wedding": 2000,
+    "Savings": 3000
+}
+```
 
 ## output
 
-writes files in the `./out` folder.
-
-### File Name
+writes files in the $TRANSACTIONS_REPORTS_DIR folder.
 
 The output created is of the name `transactions YYYYmmdd HHMMSS.xlsx`.
 
-### File format
-
-An excel file is created
+An excel file is created.
 
 ## Running
 
@@ -44,6 +73,5 @@ An excel file is created
 - Then use `source /venv/bin/activate` to activate it.
 - then use `pip3 install -r requirements.txt` to install the requirements.
 - This is only required once.
-- use `ln -s /old/path in` to link raw transaction data directory.
-- use `ln -s /old/path old` to link output directory.
+- Modify the .env for a path that works
 - use `./main.py` or `./run` in order to run the program.
