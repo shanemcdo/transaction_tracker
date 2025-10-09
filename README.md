@@ -1,7 +1,6 @@
 # Transaction Tracker
 
 This creates an excel file using the transactions from ["Spending Tracker"](https://apps.apple.com/us/app/spending-tracker/id548615579)
-link
 
 ## Input
 
