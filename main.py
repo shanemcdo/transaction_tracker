@@ -677,11 +677,14 @@ class Writer:
 				savings_sum_today += summation_string
 			else:
 				checking_sum_today += summation_string
+		expected_checking = balances_df[~savings]['New Balance'].sum() + default_income_transactions.Amount.sum() - default_transactions.Amount.sum()
+		expected_saving = balances_df[savings]['New Balance'].sum()
 		balances_info = pd.DataFrame([
 			[
 				'Expected (as of the end of the month)',
-				balances_df[~savings]['New Balance'].sum() + default_income_transactions.Amount.sum() - default_transactions.Amount.sum(),
-				balances_df[savings]['New Balance'].sum(),
+				expected_checking,
+				expected_saving,
+				expected_checking + expected_saving,
 				'N/A',
 				'N/A',
 			],
@@ -689,6 +692,7 @@ class Writer:
 				'Expected (as of today)',
 				checking_sum_today,
 				savings_sum_today,
+				f'={xl_rowcol_to_cell(self.row + 3, self.column + 1)} + {xl_rowcol_to_cell(self.row + 3, self.column + 2)}',
 				'N/A',
 				'N/A',
 			],
@@ -696,23 +700,33 @@ class Writer:
 				'Actual',
 				f'={BUDGET_BALANCES_SHEET}!G2',
 				f'={BUDGET_BALANCES_SHEET}!J2',
+				f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} + {xl_rowcol_to_cell(self.row + 4, self.column + 2)}',
 				f'={BUDGET_BALANCES_SHEET}!S2',
-				f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} + {xl_rowcol_to_cell(self.row + 4, self.column + 2)} + {xl_rowcol_to_cell(self.row + 4, self.column + 3)}'
+				f'={xl_rowcol_to_cell(self.row + 4, self.column + 3)} + {xl_rowcol_to_cell(self.row + 4, self.column + 4)}',
 			],
 			[
 				'Actual - Expected (as of today)',
 				f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}',
 				f'={xl_rowcol_to_cell(self.row + 4, self.column + 2)} - {xl_rowcol_to_cell(self.row + 3, self.column + 2)}',
+				f'={xl_rowcol_to_cell(self.row + 4, self.column + 3)} - {xl_rowcol_to_cell(self.row + 3, self.column + 3)}',
 				'N/A',
 				'N/A',
 			],
-		], columns = [' ', 'Checking', 'Savings', 'Investments', 'Total'])
+		], columns = [' ', 'Checking', 'Savings', 'Checking + Savings', 'Investments', 'Total'])
 		self.write_title('Balances Sums', len(balances_info.columns))
 		self.write_table(
 			balances_info,
 			sheet_name + 'BalancesSumsTable',
 			# required to be explicit because formulas aren't listed as int/float
-			self.columns(balances_info, {}, self.column_currency_kwargs, self.column_currency_kwargs, self.column_currency_kwargs, self.column_currency_kwargs),
+			self.columns(
+				balances_info,
+				{},
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs
+			),
 			headers = True
 		)
 		# Budget Categories Table
