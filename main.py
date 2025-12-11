@@ -547,7 +547,7 @@ class Writer:
 		self.sheet.merge_range(start_row, start_col, start_row, start_col + width - 1, title, self.formats['merged'])
 		return start_row + 1, start_col + width
 
-	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str | None = None, budget: dict | None = None):
+	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str | None = None, budget: pd.DataFrame | None = None):
 		'''
 		Create and write the sheet for a given month
 		:month: int 1-14, 1-12 for the months of the year
