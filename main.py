@@ -587,14 +587,12 @@ class Writer:
 		# below required according to: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
 		default_income_transactions.loc[:, 'Amount'] *= -1
 		default_transactions = default_transactions[~income_condition]
-		positive_default_transactions = default_transactions[default_transactions.Amount > 0]
 		all_expenses = data.loc[data.Category.map(lambda x: x not in INCOME_CATEGORIES), data_headers]
 		all_expenses_no_transfers = all_expenses[all_expenses.Category != 'Transfer']
 		eligible_expenses = all_expenses[all_expenses.Category.map(lambda x: x not in [ 'Investing', 'Transfer' ])]
 		write_transaction_table(default_transactions, DEFAULT_ACCOUNT)
 		write_transaction_table(default_income_transactions, DEFAULT_ACCOUNT + ' Income', False)
 		accounts = data.loc[data.Account != DEFAULT_ACCOUNT, 'Account'].sort_values().unique()
-		pre_balances_sum = sum(self.balances.values())
 		for account in accounts:
 			transactions = data.loc[data.Account == account, data_headers]
 			transactions.Amount *= -1
@@ -607,7 +605,6 @@ class Writer:
 		# Total budget / carryover / remaining
 		income_sum = default_income_transactions.Amount.sum()
 		expenses_sum = default_transactions.Amount.sum()
-		income_and_balances_sum = income_sum + pre_balances_sum
 		all_expenses_sum = all_expenses.Amount.sum()
 		all_income_sum = -data.loc[data.Category.map(lambda x: x in INCOME_CATEGORIES)].Amount.sum()
 		budget_info = pd.DataFrame([
