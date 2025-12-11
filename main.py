@@ -565,7 +565,7 @@ class Writer:
 			if data.shape[0] == 0: return
 			self.write_title(table_name, len(data.columns))
 			self.write_table(
-				data if include_cashback else data[['Date', 'Category', 'Amount', 'Note']],
+				data if include_cashback else data.loc[:, ['Date', 'Category', 'Amount', 'Note']],
 				sheet_name + clean_table_name(table_name),
 				self.columns(
 					default_transactions,
@@ -644,7 +644,7 @@ class Writer:
 			] for account in sorted(set((*accounts, *self.balances.keys())))),
 			columns = ['Account', 'New Balance', 'Net Change', 'Spent', 'Saved', 'Transaction Count']
 		)
-		balances_df = balances_df[
+		balances_df = balances_df.loc[
 			(abs(balances_df['New Balance']) >= 0.001) |
 			(abs(balances_df['Net Change']) >= 0.001) |
 			(abs(balances_df['Spent']) >= 0.001) |
