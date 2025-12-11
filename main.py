@@ -80,7 +80,7 @@ def clean_table_name(table_name: str) -> str:
 class Writer:
 
 	def __init__(self, filename: str):
-		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter')
+		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter') # pyright: ignore
 		self.workbook = self.excelWriter.book
 		currency = { 'num_format': 44 } # 44 is accounting format
 		border = { 'border': True }
