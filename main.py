@@ -758,7 +758,7 @@ class Writer:
 			budget_categories_df.loc[budget_categories_df.Category == 'Other', col] = pivot.loc[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer'), col].sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
-		budget_categories_df = budget_categories_df[['Category', 'Expected', 'Amount', 'Remaining', 'Usage %', 'CashBack Reward', 'Transaction Count']]
+		budget_categories_df = budget_categories_df.loc[:, ['Category', 'Expected', 'Amount', 'Remaining', 'Usage %', 'CashBack Reward', 'Transaction Count']]
 		budget_categories_table_name = sheet_name + 'BudgetCategoriesTable'
 		self.write_title('Budget Categories (Excluding Transfers)', len(budget_categories_df.columns))
 		before_row = self.row
