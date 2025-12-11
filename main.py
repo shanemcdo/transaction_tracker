@@ -869,7 +869,7 @@ class Writer:
 					default_transactions[condition]['CashBack Reward'].sum(),
 					len(default_transactions[condition]),
 				])
-			weekly_spend = pd.DataFrame(rows, columns = ('Week', 'Amount', 'Expected', 'Cashback Reward', 'Transaction Count'))
+			weekly_spend = pd.DataFrame(rows, columns = ['Week', 'Amount', 'Expected', 'Cashback Reward', 'Transaction Count'])
 			self.write_title(f'{DEFAULT_ACCOUNT} Weekly {category} Spend', len(weekly_spend.columns))
 			self.write_table(
 				weekly_spend,
