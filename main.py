@@ -29,22 +29,23 @@ MONTHS = {
 	12: 'December',
 	13: 'Whole Year'
 }
+getenv = lambda x: os.getenv(x) or ''
 MONTHS_SHORT = { key: value[:3] for key, value in MONTHS.items() }
 load_dotenv()
-SAVINGS_ACCOUNTS = os.getenv('SAVINGS_ACCOUNTS').split(',')
-INCOME_CATEGORIES = os.getenv('INCOME_CATEGORIES').split(',')
-BUDGETS_DIR = os.getenv('BUDGETS_DIR')
-BALANCES_DIR = os.getenv('BALANCES_DIR')
-RAW_TRANSACTIONS_DIR = os.getenv('RAW_TRANSACTIONS_DIR')
-TRANSACTION_REPORTS_DIR = os.getenv('TRANSACTION_REPORTS_DIR')
-FINANCE_PATH = os.getenv('FINANCE_PATH')
-BUDGET_BALANCES_SHEET = os.getenv('BUDGET_BALANCES_SHEET')
+SAVINGS_ACCOUNTS = getenv('SAVINGS_ACCOUNTS').split(',')
+INCOME_CATEGORIES = getenv('INCOME_CATEGORIES').split(',')
+BUDGETS_DIR = getenv('BUDGETS_DIR')
+BALANCES_DIR = getenv('BALANCES_DIR')
+RAW_TRANSACTIONS_DIR = getenv('RAW_TRANSACTIONS_DIR')
+TRANSACTION_REPORTS_DIR = getenv('TRANSACTION_REPORTS_DIR')
+FINANCE_PATH = getenv('FINANCE_PATH')
+BUDGET_BALANCES_SHEET = getenv('BUDGET_BALANCES_SHEET')
 # unix glob format
-RAW_TRANSACTION_FILENAME_FORMAT = os.getenv('RAW_TRANSACTION_FILENAME_FORMAT')
-STARTING_STYLE_COUNT = int(os.getenv('STARTING_STYLE_COUNT'))
-ENDING_STYLE_COUNT = int(os.getenv('ENDING_STYLE_COUNT'))
-STARTING_YEAR = int(os.getenv('STARTING_YEAR'))
-DEFAULT_ACCOUNT = os.getenv('DEFAULT_ACCOUNT')
+RAW_TRANSACTION_FILENAME_FORMAT = getenv('RAW_TRANSACTION_FILENAME_FORMAT')
+STARTING_STYLE_COUNT = int(getenv('STARTING_STYLE_COUNT'))
+ENDING_STYLE_COUNT = int(getenv('ENDING_STYLE_COUNT'))
+STARTING_YEAR = int(getenv('STARTING_YEAR'))
+DEFAULT_ACCOUNT = getenv('DEFAULT_ACCOUNT')
 EMPTY = pd.DataFrame({
 	'Date': [],
 	'Category': [],
@@ -58,7 +59,7 @@ EMPTY = pd.DataFrame({
 def get_year() -> int:
 	return datetime.datetime.now().year
 
-def parse_date(date: str) -> datetime.datetime:
+def parse_date(date: str) -> datetime.date:
 	return datetime.datetime.strptime(date, '%m/%d/%Y').date()
 
 def stringify_date(day: int) -> str:
