@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
 import os
-import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell
 import datetime
 import calendar
 import pandas as pd
-from pandas.api.types import is_dtype_equal
 from glob import glob
 import json
 from functools import reduce
@@ -244,7 +242,6 @@ class Writer:
 		elif len(files) == 1:
 			file = files[0]
 		else:
-			filename = files[-1]
 			biggest = -1, None
 			for file in files:
 				if '(' not in file:
@@ -253,6 +250,7 @@ class Writer:
 				if number > biggest[0]:
 					biggest = number, file
 			file = biggest[1]
+			assert file is not None
 		return os.path.join(RAW_TRANSACTIONS_DIR, file)
 
 	@staticmethod
@@ -284,14 +282,14 @@ class Writer:
 			filename = self.get_csv_filename_from_month(MONTHS_SHORT[month])
 			data = pd.read_csv(
 				filename,
-				sep ='\s*,\s*',
+				sep =r'\s*,\s*',
 				# get rid of warning
 				engine='python'
 			).sort_values(by = 'Date')
 		except FileNotFoundError:
 			return None
 		data.Amount *= -1
-		data = data[data.Category != 'Carry Over']
+		data = data.loc[data.Category != 'Carry Over']
 		data.Date = data.Date.apply(parse_date)
 		tuple_col = data.Note.apply(self.parse_note)
 		data.Note = tuple_col.apply(lambda x: x[0])
@@ -379,7 +377,7 @@ class Writer:
 		})
 		return start_row + rows + 1, start_col + cols + 1
 
-	def write_chart_at(self, name: str, chart_type: str, table_name: str, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True, size: int = { 'x': 520, 'y': 520 }):
+	def write_chart_at(self, name: str, chart_type: str, table_name: str, start_row: int, start_col: int, categories_field: str, values_field: str, i: int = 0, j: int = 0, show_value: bool = True, size: dict[str, int] = { 'x': 520, 'y': 520 }):
 		'''
 		write pandas data to an excel pie chart
 		:name: title for the pie chart
@@ -544,10 +542,10 @@ class Writer:
 			self.next_column = col
 
 	def write_title_at(self, title: str, width: int, start_row: int, start_col: int) -> tuple[int, int]:
-		self.sheet.merge_range(self.row, self.column, self.row, self.column + width - 1, title, self.formats['merged'])
-		return self.row + 1, self.column + width
+		self.sheet.merge_range(start_row, start_col, start_row, start_col + width - 1, title, self.formats['merged'])
+		return start_row + 1, start_col + width
 
-	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str = None, budget: dict = None):
+	def write_month(self, month: int, data: pd.DataFrame, sheet_name: str | None = None, budget: dict | None = None):
 		'''
 		Create and write the sheet for a given month
 		:month: int 1-14, 1-12 for the months of the year
