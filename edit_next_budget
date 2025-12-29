@@ -1,6 +1,6 @@
 #!/bin/sh
 
 dir=./budgets/
-now=`date -v+1m +%Y%m`
+next=`date -v+1m +%Y%m`
 
-$EDITOR "$dir${now}budget.csv"
+$EDITOR "$dir${next}budget.csv"
