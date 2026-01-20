@@ -1,6 +1,3 @@
 #!/bin/sh
 
-dir=./budgets/
-next=`date -v+1m +%Y%m`
-
-$EDITOR "$dir${next}budget.csv"
+./edit_budget 1
