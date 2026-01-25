@@ -787,23 +787,18 @@ class Writer:
 			'max_value': 1,
 		})
 		# transfers table
-		transfer_condition = (
-			default_transactions.Category == 'Transfer') | (
-			default_transactions.Category == 'Investing')
 		transfer_max = income_sum - budget_categories_df.Amount.sum()
-		transfer_sum = (
-				default_transactions.loc[transfer_condition, 'Amount'].sum()
-				# despite only being one value this needs a sum or it returns a series
-				- budget_categories_df.loc[budget_categories_df.Category == 'Investing', 'Amount'].sum()
-		)
-		transfer_count  = default_transactions.loc[transfer_condition, 'Amount'].count()
+		transfer_sum = default_transactions.loc[default_transactions.Category == 'Transfer', 'Amount'].sum()
+		investing_sum = default_transactions.loc[default_transactions.Category == 'Investing', 'Amount'].sum()
+		transfer_and_investing = transfer_sum + investing_sum
 		transfers_df = pd.DataFrame(data = {
 			'Expected (Income - Expected)': [income_sum - budget_categories_df.Expected.sum()],
 			'Max (Income - Spend)':         [transfer_max],
-			'Amount':                       [transfer_sum],
-			'Remaining':                    [transfer_max - transfer_sum],
-			'Usage %':                      [transfer_sum / transfer_max],
-			'Transaction Count':            [transfer_count],
+			'Tranfers':                     [transfer_sum],
+			'Investing':                    [investing_sum],
+			'Total':                        [transfer_and_investing],
+			'Remaining':                    [transfer_max - transfer_and_investing],
+			'Usage %':                      [transfer_and_investing / transfer_max],
 		})
 		transfers_table_name = sheet_name + 'TransfersTable'
 		self.write_title(f'{DEFAULT_ACCOUNT} Transfers & Investing', len(transfers_df.columns))
@@ -817,12 +812,13 @@ class Writer:
 				{},
 				{},
 				{},
+				{},
+				{},
 				self.column_percent_kwargs,
-				self.column_total_sum_kwargs,
 			),
 			False
 		)
-		self.sheet.conditional_format(before_row + 1, self.column + 4, self.row - 1, self.column + 4, {
+		self.sheet.conditional_format(before_row + 1, self.column + 6, self.row - 1, self.column + 6, {
 			'type': '3_color_scale',
 			'min_color': '#63be7b',
 			'min_type': 'num',
