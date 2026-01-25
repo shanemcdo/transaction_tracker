@@ -704,9 +704,9 @@ class Writer:
 			],
 			[
 				'Actual - Expected (as of today)',
-				f'={xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}',
-				f'={xl_rowcol_to_cell(self.row + 4, self.column + 2)} - {xl_rowcol_to_cell(self.row + 3, self.column + 2)}',
-				f'={xl_rowcol_to_cell(self.row + 4, self.column + 3)} - {xl_rowcol_to_cell(self.row + 3, self.column + 3)}',
+				f'=round({xl_rowcol_to_cell(self.row + 4, self.column + 1)} - {xl_rowcol_to_cell(self.row + 3, self.column + 1)}, 3)',
+				f'=round({xl_rowcol_to_cell(self.row + 4, self.column + 2)} - {xl_rowcol_to_cell(self.row + 3, self.column + 2)}, 3)',
+				f'=round({xl_rowcol_to_cell(self.row + 4, self.column + 3)} - {xl_rowcol_to_cell(self.row + 3, self.column + 3)}, 3)',
 				'N/A',
 				'N/A',
 			],
