@@ -793,7 +793,7 @@ class Writer:
 		transfer_and_investing = transfer_sum + investing_sum
 		amounts = (transfer_sum, investing_sum, transfer_and_investing)
 		transfers_df = pd.DataFrame(data = {
-			'type': ['Transfers', 'Investing', 'Total'],
+			'type':                         ['Transfers', 'Investing', 'Total'],
 			'Expected (Income - Expected)': ['N/A', 'N/A', income_sum - budget_categories_df.Expected.sum()],
 			'Max (Income - Spend)':         ['N/A', 'N/A', transfer_max],
 			'Amount':                       amounts,
