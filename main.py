@@ -752,7 +752,7 @@ class Writer:
 				budget_categories_df.loc[budget_categories_df.Category == cat, col] = pivot.loc[pivot.Category.map(lambda x: x in cats), col].sum()
 		for col in extra_budget_cols:
 			budget_categories_df[col] = budget_categories_df[col].fillna(0)
-			budget_categories_df.loc[budget_categories_df.Category == 'Other', col] = pivot.loc[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer'), col].sum()
+			budget_categories_df.loc[budget_categories_df.Category == 'Other', col] = pivot.loc[pivot.Category.map(lambda x: (x not in all_cats or x == 'Other') and x != 'Transfer' and x != 'Investing'), col].sum()
 		budget_categories_df['Remaining'] = budget_categories_df.Expected - budget_categories_df.Amount
 		budget_categories_df['Usage %'] = budget_categories_df['Amount'] / budget_categories_df['Expected']
 		budget_categories_df = budget_categories_df.loc[:, ['Category', 'Expected', 'Amount', 'Remaining', 'Usage %', 'CashBack Reward', 'Transaction Count']]
@@ -787,18 +787,26 @@ class Writer:
 			'max_value': 1,
 		})
 		# transfers table
+		transfer_condition = (
+			default_transactions.Category == 'Transfer') | (
+			default_transactions.Category == 'Investing')
 		transfer_max = income_sum - budget_categories_df.Amount.sum()
-		transfer_sum = default_transactions.loc[default_transactions.Category == 'Transfer', 'Amount'].sum()
+		transfer_sum = (
+				default_transactions.loc[transfer_condition, 'Amount'].sum()
+				# despite only being one value this needs a sum or it returns a series
+				- budget_categories_df.loc[budget_categories_df.Category == 'Investing', 'Amount'].sum()
+		)
+		transfer_count  = default_transactions.loc[transfer_condition, 'Amount'].count()
 		transfers_df = pd.DataFrame(data = {
 			'Expected (Income - Expected)': [income_sum - budget_categories_df.Expected.sum()],
 			'Max (Income - Spend)':         [transfer_max],
 			'Amount':                       [transfer_sum],
 			'Remaining':                    [transfer_max - transfer_sum],
 			'Usage %':                      [transfer_sum / transfer_max],
-			'Transaction Count':            [pivot.loc[pivot.Category == 'Transfer', 'Transaction Count']],
+			'Transaction Count':            [transfer_count],
 		})
 		transfers_table_name = sheet_name + 'TransfersTable'
-		self.write_title(f'{DEFAULT_ACCOUNT} Transfers', len(transfers_df.columns))
+		self.write_title(f'{DEFAULT_ACCOUNT} Transfers & Investing', len(transfers_df.columns))
 		before_row = self.row
 		self.write_table(
 			transfers_df,
