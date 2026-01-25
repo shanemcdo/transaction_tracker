@@ -791,14 +791,14 @@ class Writer:
 		transfer_sum = default_transactions.loc[default_transactions.Category == 'Transfer', 'Amount'].sum()
 		investing_sum = default_transactions.loc[default_transactions.Category == 'Investing', 'Amount'].sum()
 		transfer_and_investing = transfer_sum + investing_sum
+		amounts = (transfer_sum, investing_sum, transfer_and_investing)
 		transfers_df = pd.DataFrame(data = {
-			'Expected (Income - Expected)': [income_sum - budget_categories_df.Expected.sum()],
-			'Max (Income - Spend)':         [transfer_max],
-			'Tranfers':                     [transfer_sum],
-			'Investing':                    [investing_sum],
-			'Total':                        [transfer_and_investing],
-			'Remaining':                    [transfer_max - transfer_and_investing],
-			'Usage %':                      [transfer_and_investing / transfer_max],
+			'type': ['Transfers', 'Investing', 'Total'],
+			'Expected (Income - Expected)': ['N/A', 'N/A', income_sum - budget_categories_df.Expected.sum()],
+			'Max (Income - Spend)':         ['N/A', 'N/A', transfer_max],
+			'Amount':                       amounts,
+			'Remaining':                    ['N/A', 'N/A', transfer_max - transfer_and_investing],
+			'Usage %':                      map(lambda x: x / transfer_max, amounts),
 		})
 		transfers_table_name = sheet_name + 'TransfersTable'
 		self.write_title(f'{DEFAULT_ACCOUNT} Transfers & Investing', len(transfers_df.columns))
@@ -809,16 +809,15 @@ class Writer:
 			self.columns(
 				transfers_df,
 				{},
-				{},
-				{},
-				{},
-				{},
-				{},
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
+				self.column_currency_kwargs,
 				self.column_percent_kwargs,
 			),
 			False
 		)
-		self.sheet.conditional_format(before_row + 1, self.column + 6, self.row - 1, self.column + 6, {
+		self.sheet.conditional_format(before_row + 1, self.column + 5, self.row - 1, self.column + 5, {
 			'type': '3_color_scale',
 			'min_color': '#63be7b',
 			'min_type': 'num',
