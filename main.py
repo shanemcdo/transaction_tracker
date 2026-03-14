@@ -1030,7 +1030,7 @@ class Writer:
 		self.write_table(
 			pivot,
 			day_number_table_name,
-			self.columns(pivot, {}, *self.pivot_columns_args),
+			self.columns(pivot, self.column_total_sum_kwargs, *self.pivot_columns_args),
 		)
 		# Category / Account pivot
 		pivot = all_expenses_no_transfers.pivot_table(
