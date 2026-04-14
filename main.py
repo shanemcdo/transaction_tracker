@@ -1118,10 +1118,11 @@ class Writer:
 					show_value
 				)
 
-	def handle_month(self, month: int) -> bool:
+	def handle_month(self, month: int, write_month: bool = True) -> bool:
 		'''
 		read and write data for the month
 		:month: int, 1-12 number representing the months
+		:write_month: optional boolean, whether or not to write the month
 		:returns: true if it succeeds and false if it fails
 		'''
 		if month < 1 or month > 12:
@@ -1130,7 +1131,7 @@ class Writer:
 		if data is None:
 			print(f'Couldn \'t find transaction file for month {month}. Continuing')
 			return False
-		if not data.empty:
+		if not data.empty and write_month:
 			self.write_month(month, data)
 		return True
 
@@ -1298,8 +1299,9 @@ def main():
 		writer.get_balances()
 		any_success = False
 		for month in range(1,13):
-			any_success |= writer.handle_month(month)
-			if current_year != year or month + 3 < now.month:
+			write_month = current_year == year and month + 3 >= now.month
+			any_success |= writer.handle_month(month, write_month)
+			if write_month:
 				writer.hide(month)
 		if any_success:
 			writer.reset_balances()
