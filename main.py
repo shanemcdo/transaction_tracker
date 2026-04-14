@@ -1174,7 +1174,7 @@ class Writer:
 		gc = gspread.oauth() # pyright: ignore
 		sh = gc.open_by_url(SHEET_URL)
 		datasheet = sh.sheet1
-		datasheet.update(data.values.tolist(), value_input_option = 'USER_ENTERED') # pyright : ignore
+		datasheet.update(data.values.tolist(), value_input_option = 'USER_ENTERED') # pyright: ignore
 
 	def write_all_transactions(self):
 		'''
