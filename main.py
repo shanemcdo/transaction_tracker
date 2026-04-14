@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+
 from xlsxwriter.utility import xl_rowcol_to_cell
 import datetime
 import calendar
@@ -53,6 +54,11 @@ EMPTY = pd.DataFrame({
 	'CashBack Reward': [],
 	'Account': [],
 })
+GOOGLE_SHEETS_ENABLED = getenv('GOOGLE_SHEETS_ENABLED') == 'true'
+
+if GOOGLE_SHEETS_ENABLED:
+	import gspread
+	SHEET_URL = getenv('SHEET_URL')
 
 def get_year() -> int:
 	return datetime.datetime.now().year
@@ -1150,6 +1156,26 @@ class Writer:
 		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
 		self.write_month(14, data, 'SummaryAll', budget)
 
+	def get_all_data(self):
+		'''
+		concat all data into one pandas object
+		'''
+		return pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
+
+	def write_google_sheets(self):
+		'''
+		Update google sheets data sheet with fresh data
+		'''
+		if not GOOGLE_SHEETS_ENABLED:
+			return
+		data = self.get_all_data()
+		print(data.Date)
+		data.Date = data.Date.map(lambda x: x.strftime('%Y/%m/%d'))
+		gc = gspread.oauth() # pyright: ignore
+		sh = gc.open_by_url(SHEET_URL)
+		datasheet = sh.sheet1
+		datasheet.update(data.values.tolist(), value_input_option = 'USER_ENTERED') # pyright : ignore
+
 	def write_all_transactions(self):
 		'''
 		Create a new sheet that contains a table containing all available transaction data
@@ -1157,7 +1183,7 @@ class Writer:
 		sheet_name = 'allTransactions'
 		table_name = sheet_name + '_all_transactions_table'
 		self.sheet = self.workbook.add_worksheet(sheet_name)
-		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
+		data = self.get_all_data()
 		self.reset_position()
 		self.reset_style_count()
 		self.write_title('All Transactions', len(data.columns))
@@ -1282,6 +1308,7 @@ def main():
 	writer.reset_balances()
 	writer.write_summary_all()
 	writer.write_all_transactions()
+	writer.write_google_sheets() # if statement inside method to check if enabled
 	writer.set_year(current_year)
 	writer.focus(now.month)
 	writer.full_screen()
