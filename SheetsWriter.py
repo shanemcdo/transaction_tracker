@@ -1,6 +1,7 @@
-from utils import *
 from DataLoader import DataLoader
+from utils import *
 import gspread
+import pandas as pd
 
 SHEET_URL = getenv('SHEET_URL')
 
