@@ -1170,12 +1170,24 @@ class Writer:
 		if not GOOGLE_SHEETS_ENABLED:
 			return
 		data = self.get_all_data()
-		print(data.Date)
 		data.Date = data.Date.map(lambda x: x.strftime('%Y/%m/%d'))
 		gc = gspread.oauth() # pyright: ignore
 		sh = gc.open_by_url(SHEET_URL)
-		datasheet = sh.sheet1
+		datasheet = sh.worksheet('Transactions')
+		datasheet.clear()
 		datasheet.update(data.values.tolist(), value_input_option = 'USER_ENTERED') # pyright: ignore
+		budgetsheet = sh.worksheet('Budgets')
+		budgetsheet.clear()
+		budgets = pd.DataFrame(
+			data = [
+				(year, month, df.loc[df.Category == 'Rent & Utilities', 'Expected'].sum(), df.loc[df.Category == 'Fuel', 'Expected'].sum(), df.loc[df.Category == 'Groceries', 'Expected'].sum(), df.loc[df.Category == 'Eating Out', 'Expected'].sum(), df.loc[df.Category == 'Other', 'Expected'].sum())
+				for year, months in self.monthly_budget.items()
+				for month, df in months.items()
+				if month < 13
+			],
+			columns = ['year', 'month', 'Rent & Utilities', 'Fuel', 'Groceries', 'Eating Out', 'Other'],
+		)
+		budgetsheet.update([budgets.columns.values.tolist()] + budgets.values.tolist(), value_input_option = 'USER_ENTERED') # pyright: ignore
 
 	def write_all_transactions(self):
 		'''
