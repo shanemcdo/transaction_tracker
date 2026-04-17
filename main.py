@@ -1188,6 +1188,8 @@ class Writer:
 			columns = ['year', 'month', 'Rent & Utilities', 'Fuel', 'Groceries', 'Eating Out', 'Other'],
 		)
 		budgetsheet.update([budgets.columns.values.tolist()] + budgets.values.tolist(), value_input_option = 'USER_ENTERED') # pyright: ignore
+		datesheet = sh.worksheet('Date Last Updated')
+		datesheet.update([[datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')]], value_input_option = 'USER_ENTERED') # pyright: ignore
 
 	def write_all_transactions(self):
 		'''
