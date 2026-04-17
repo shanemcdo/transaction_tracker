@@ -6,65 +6,11 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 import datetime
 import calendar
 import pandas as pd
-from glob import glob
-import json
 from functools import reduce
 from itertools import chain
-from dotenv import load_dotenv
 
-# names of accounts in balances that are stored in savings accounts
-MONTHS = {
-	1: 'January',
-	2: 'February',
-	3: 'March',
-	4: 'April',
-	5: 'May',
-	6: 'June',
-	7: 'July',
-	8: 'August',
-	9: 'September',
-	10: 'October',
-	11: 'November',
-	12: 'December',
-	13: 'Whole Year'
-}
-getenv = lambda x: os.getenv(x) or ''
-MONTHS_SHORT = { key: value[:3] for key, value in MONTHS.items() }
-load_dotenv()
-SAVINGS_ACCOUNTS = getenv('SAVINGS_ACCOUNTS').split(',')
-INCOME_CATEGORIES = getenv('INCOME_CATEGORIES').split(',')
-BUDGETS_DIR = getenv('BUDGETS_DIR')
-BALANCES_DIR = getenv('BALANCES_DIR')
-RAW_TRANSACTIONS_DIR = getenv('RAW_TRANSACTIONS_DIR')
-TRANSACTION_REPORTS_DIR = getenv('TRANSACTION_REPORTS_DIR')
-FINANCE_PATH = getenv('FINANCE_PATH')
-BUDGET_BALANCES_SHEET = getenv('BUDGET_BALANCES_SHEET')
-# unix glob format
-RAW_TRANSACTION_FILENAME_FORMAT = getenv('RAW_TRANSACTION_FILENAME_FORMAT')
-STARTING_STYLE_COUNT = int(getenv('STARTING_STYLE_COUNT'))
-ENDING_STYLE_COUNT = int(getenv('ENDING_STYLE_COUNT'))
-STARTING_YEAR = int(getenv('STARTING_YEAR'))
-DEFAULT_ACCOUNT = getenv('DEFAULT_ACCOUNT')
-EMPTY = pd.DataFrame({
-	'Date': [],
-	'Category': [],
-	'Amount': [],
-	'Note': [],
-	'CashBack %': [],
-	'CashBack Reward': [],
-	'Account': [],
-})
-GOOGLE_SHEETS_ENABLED = getenv('GOOGLE_SHEETS_ENABLED') == 'true'
+from .utils import *
 
-if GOOGLE_SHEETS_ENABLED:
-	import gspread
-	SHEET_URL = getenv('SHEET_URL')
-
-def get_year() -> int:
-	return datetime.datetime.now().year
-
-def parse_date(date: str) -> datetime.date:
-	return datetime.datetime.strptime(date, '%m/%d/%Y').date()
 
 def stringify_date(day: int) -> str:
 	if day < 1:
@@ -110,34 +56,6 @@ class Writer:
 				'font_color': '#419c59',
 			}),
 		}
-		# {
-		#   year: {
-		#     month: DF [ Date, Category, Amount, Note, Cashback %, Cashback reward ],
-		#     ...
-		#   }, ...
-		# }
-		self.data = {}
-		# {
-		#   year: {
-		#     month: DF [ Category, Expected ],
-		#     ...
-		#   }, ...
-		# }
-		self.monthly_budget = {}
-		# {
-		#   year: {
-		#     month: pd.DataFrame {
-		#       balance category: starting value,
-		#       ...
-		#     }, ...
-		#   }, ...
-		# }
-		self.starting_balances = {}
-		# {
-		#   balance category: starting value,
-		#   ...
-		# }
-		self.balances = {}
 		self.reset_style_count()
 		self.set_year(get_year())
 		self.column_total_sum_kwargs = { 'total_function': 'sum' }
@@ -148,6 +66,20 @@ class Writer:
 		self.column_percent_kwargs = { 'format': self.formats['percent'] }
 		self.pivot_kwargs = { 'values': [ 'Amount', 'CashBack Reward'], 'aggfunc': 'sum' }
 		self.pivot_columns_args = self.column_currency_kwargs, self.column_currency_kwargs, self.column_total_sum_kwargs
+		# {
+		#   balance category: starting value,
+		#   ...
+		# }
+		self.balances = {}
+		# {
+		#   year: {
+		#     month: {
+		#       balance category: starting value,
+		#       ...
+		#     }, ...
+		#   }, ...
+		# }
+		self.starting_balances = {}
 
 	def reset_position(self):
 		'''
@@ -176,137 +108,6 @@ class Writer:
 				self.reset_style_count()
 		return result
 
-	def set_starting_balances(self):
-		'''
-		set the starting balances of the year
-		'''
-		self.starting_balances[self.year + 1] = self.balances.copy()
-
-	def get_balances(self):
-		'''
-		get starting balances from json file
-
-		example file:
-		{
-			"Bigger purchases": 0,
-			"Emergency": 1000
-		}
-		'''
-		filename = f'starting_balances{self.year}.json'
-		filepath = os.path.join(BALANCES_DIR, filename)
-		try:
-			with open(filepath) as f:
-				self.starting_balances[self.year] = json.load(f)
-				self.reset_balances()
-		except FileNotFoundError:
-			pass
-
-	def reset_balances(self):
-		'''
-		set balances back to starting balances
-		'''
-		self.balances = self.starting_balances[self.year].copy()
-
-	def get_budget_df(self, month: int, max_recursions: int = 100) -> pd.DataFrame:
-		'''
-		read the budget from the file
-		if it cannot find one it will create a new one copying the last month's
-		if it cannot find any within the lasst {max_recursion} months it will raise an FileNotFoundError
-
-		example file:
-		Category,Expected
-		Rent & Utilities,2490.0
-		Investing,500.0
-		Fuel,150.0
-		Groceries,500.0
-		Eating Out,300.0
-		Other,200.0
-		'''
-		filename = os.path.join(BUDGETS_DIR, f'{self.year}{month:02d}budget.csv')
-		try:
-			return pd.read_csv(filename)
-		except FileNotFoundError as e:
-			if max_recursions < 1:
-				raise e
-			year = self.year
-			month -= 1
-			if month < 1:
-				month = 12
-				self.year -= 1
-			df = self.get_budget_df(month, max_recursions - 1)
-			df.to_csv(filename, index = False)
-			self.year = year
-			return df
-
-	def get_csv_filename_from_month(self, month: str) -> str:
-		# e.g. 'Transactions Nov 1, 2024 - Nov 30, 2024 (7).csv'
-		glob_pattern = RAW_TRANSACTION_FILENAME_FORMAT.format(month, self.year)
-		files = glob(
-			glob_pattern,
-			root_dir = RAW_TRANSACTIONS_DIR
-		)
-		if len(files) < 1:
-			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
-		elif len(files) == 1:
-			file = files[0]
-		else:
-			biggest = -1, None
-			for file in files:
-				if '(' not in file:
-					continue
-				number = int(file[file.find('(') + 1 : file.find(')')])
-				if number > biggest[0]:
-					biggest = number, file
-			file = biggest[1]
-			assert file is not None
-		return os.path.join(RAW_TRANSACTIONS_DIR, file)
-
-	@staticmethod
-	def parse_note(note: str, sep: str = '|') -> tuple[str, float]:
-		'''
-		Split note on seperator string and return parsed note and cashback
-		:note: original note containing note message and cashback %
-		:sep: the string to split the note on
-		:return: note message and cashback percent in a tuple
-		'''
-		note = str(note)
-		if note == 'nan':
-			note = ''
-		if sep in note:
-			try:
-				note, cashback = map(lambda x: x.strip('%\n\r\t '), note.split(sep, 1))
-				return note, float(cashback) / 100
-			except ValueError:
-				pass
-		return note, 0.0
-
-	def read_month(self, month: int) -> pd.DataFrame | None:
-		'''
-		parse csv and modify data for given month
-		:month: int 1-12, its the month to read in
-		:return: a tuple of the csv data and the carry_over from the previous month
-		'''
-		try:
-			filename = self.get_csv_filename_from_month(MONTHS_SHORT[month])
-			data = pd.read_csv(
-				filename,
-				sep =r'\s*,\s*',
-				# get rid of warning
-				engine='python'
-			).sort_values(by = 'Date')
-		except FileNotFoundError:
-			return None
-		data.Amount *= -1
-		data = data.loc[data.Category != 'Carry Over']
-		data.Date = data.Date.apply(parse_date)
-		tuple_col = data.Note.apply(self.parse_note)
-		data.Note = tuple_col.apply(lambda x: x[0])
-		data['CashBack %'] = tuple_col.apply(lambda x: x[1])
-		data['CashBack Reward'] = data.Amount * data['CashBack %']
-		self.data[self.year][month] = data.copy()
-		self.monthly_budget[self.year][month] = self.get_budget_df(month)
-		return data
-
 	def columns(self, df: pd.DataFrame, *column_kwargs_list: dict) -> list[dict]:
 		'''
 		:df: data where column names are taken from
@@ -329,6 +130,20 @@ class Writer:
 				**column_kwargs
 			})
 		return result
+
+	def reset_balances(self):
+		'''
+		set balances back to starting balances
+		'''
+		self.balances = self.starting_balances[self.year].copy()
+
+	def set_starting_balances(self, year: int, balances: dict[int, pd.DataFrame]):
+		'''
+		set the starting balances of the year
+		:year: year these balances apply to
+		'''
+		self.starting_balances[year + 1] = self.balances.copy()
+
 
 	def write_table(self, data: pd.DataFrame, table_name: str, columns: list[dict], total: bool = False, headers: bool = True):
 		'''
@@ -1157,40 +972,6 @@ class Writer:
 		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
 		self.write_month(14, data, 'SummaryAll', budget)
 
-	def get_all_data(self):
-		'''
-		concat all data into one pandas object
-		'''
-		return pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
-
-	def write_google_sheets(self):
-		'''
-		Update google sheets data sheet with fresh data
-		'''
-		if not GOOGLE_SHEETS_ENABLED:
-			return
-		data = self.get_all_data()
-		data.Date = data.Date.map(lambda x: x.strftime('%Y/%m/%d'))
-		gc = gspread.oauth() # pyright: ignore
-		sh = gc.open_by_url(SHEET_URL)
-		datasheet = sh.worksheet('Raw Transactions')
-		datasheet.clear()
-		datasheet.update(data.values.tolist(), value_input_option = 'USER_ENTERED') # pyright: ignore
-		budgetsheet = sh.worksheet('Budgets')
-		budgetsheet.clear()
-		budgets = pd.DataFrame(
-			data = [
-				(year, month, df.loc[df.Category == 'Rent & Utilities', 'Expected'].sum(), df.loc[df.Category == 'Fuel', 'Expected'].sum(), df.loc[df.Category == 'Groceries', 'Expected'].sum(), df.loc[df.Category == 'Eating Out', 'Expected'].sum(), df.loc[df.Category == 'Other', 'Expected'].sum())
-				for year, months in self.monthly_budget.items()
-				for month, df in months.items()
-				if month < 13
-			],
-			columns = ['year', 'month', 'Rent & Utilities', 'Fuel', 'Groceries', 'Eating Out', 'Other'],
-		)
-		budgetsheet.update([budgets.columns.values.tolist()] + budgets.values.tolist(), value_input_option = 'USER_ENTERED') # pyright: ignore
-		datesheet = sh.worksheet('Date Last Updated')
-		datesheet.update([[datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')]], value_input_option = 'USER_ENTERED') # pyright: ignore
-
 	def write_all_transactions(self):
 		'''
 		Create a new sheet that contains a table containing all available transaction data
@@ -1310,7 +1091,7 @@ def main():
 	writer = Writer(os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx'))
 	for year in range(STARTING_YEAR, current_year + 1):
 		writer.set_year(year)
-		writer.get_balances()
+		writer.get_starting_balances()
 		any_success = False
 		for month in range(1,13):
 			write_month = current_year == year and month + 3 >= now.month
@@ -1324,7 +1105,6 @@ def main():
 	writer.reset_balances()
 	writer.write_summary_all()
 	writer.write_all_transactions()
-	writer.write_google_sheets() # if statement inside method to check if enabled
 	writer.set_year(current_year)
 	writer.focus(now.month)
 	writer.full_screen()
