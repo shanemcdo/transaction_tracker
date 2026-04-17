@@ -6,6 +6,21 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 import calendar
 import pandas as pd
 
+TRANSACTION_REPORTS_DIR = getenv('TRANSACTION_REPORTS_DIR')
+FINANCE_PATH = getenv('FINANCE_PATH')
+BUDGET_BALANCES_SHEET = getenv('BUDGET_BALANCES_SHEET')
+STARTING_STYLE_COUNT = int(getenv('STARTING_STYLE_COUNT'))
+ENDING_STYLE_COUNT = int(getenv('ENDING_STYLE_COUNT'))
+EMPTY = pd.DataFrame({
+	'Date': [],
+	'Category': [],
+	'Amount': [],
+	'Note': [],
+	'CashBack %': [],
+	'CashBack Reward': [],
+	'Account': [],
+})
+
 def stringify_date(day: int) -> str:
 	if day < 1:
 		return ''
