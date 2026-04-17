@@ -37,6 +37,15 @@ class SheetsWriter:
 		datesheet = self.sheets.worksheet('Date Last Updated')
 		datesheet.update([[datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')]], value_input_option = 'USER_ENTERED') # pyright: ignore
 
+	def write_env(self):
+		envsheet = self.sheets.worksheet('env')
+		envsheet.clear()
+		envsheet.update([
+			SAVINGS_ACCOUNTS,
+			INCOME_CATEGORIES,
+			[DEFAULT_ACCOUNT],
+		])
+
 	def write_google_sheets(self):
 		'''
 		Update google sheets data sheet with fresh data
@@ -44,3 +53,4 @@ class SheetsWriter:
 		self.write_raw_transactions()
 		self.write_budgets()
 		self.write_date_last_updated()
+		self.write_env()
