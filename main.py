@@ -7,7 +7,7 @@ from SheetsWriter import SheetsWriter
 import calendar
 
 STARTING_YEAR = int(getenv('STARTING_YEAR'))
-GOOGLE_SHEETS_ENABLED = getenv('GOOGLE_SHEETS_ENABLED') == 'true'
+DISPLAY_METHOD = getenv('DISPLAY_METHOD')
 
 def write_excel(loader: DataLoader):
 	calendar.setfirstweekday(calendar.SUNDAY)
@@ -20,9 +20,16 @@ def main():
 	'''Driver Code'''
 	loader = DataLoader()
 	loader.load(STARTING_YEAR)
-	write_excel(loader)
-	if GOOGLE_SHEETS_ENABLED:
-		write_google_sheets(loader)
+	match DISPLAY_METHOD:
+		case 'Excel':
+			write_excel(loader)
+		case 'Sheets':
+			write_google_sheets(loader)
+		case 'Both':
+			write_excel(loader)
+			write_google_sheets(loader)
+		case method:
+			raise ValueError(f'Unexpected DISPLAY_METHOD: "{method}"')
 
 if __name__ == '__main__':
 	main()
