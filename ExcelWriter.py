@@ -1,6 +1,7 @@
-from utils import *
+from DataLoader import DataLoader
 from functools import reduce
 from itertools import chain
+from utils import *
 from xlsxwriter.utility import xl_rowcol_to_cell
 import calendar
 import pandas as pd
@@ -24,7 +25,11 @@ def clean_table_name(table_name: str) -> str:
 
 class ExcelWriter:
 
-	def __init__(self, filename: str):
+	def __init__(self, loader: DataLoader):
+		self.loader = loader
+		now = datetime.datetime.now()
+		datestring = now.strftime('%Y%m%d %H%M%S')
+		filename = os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx')
 		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter') # pyright: ignore
 		self.workbook = self.excelWriter.book
 		currency = { 'num_format': 44 } # 44 is accounting format
@@ -50,7 +55,7 @@ class ExcelWriter:
 			}),
 		}
 		self.reset_style_count()
-		self.set_year(get_year())
+		self.year = now.year
 		self.column_total_sum_kwargs = { 'total_function': 'sum' }
 		self.column_currency_kwargs = { 'format': self.formats['currency'], **self.column_total_sum_kwargs }
 		self.column_total_kwargs = { 'total_string': 'Total' }
@@ -66,13 +71,13 @@ class ExcelWriter:
 		self.balances = {}
 		# {
 		#   year: {
-		#     month: {
-		#       balance category: starting value,
-		#       ...
-		#     }, ...
+		#     balance category: starting value,
+		#     ...
 		#   }, ...
 		# }
-		self.starting_balances = {}
+		self.starting_balances = {
+			min(self.loader.data.keys()): self.loader.starting_balances.copy(),
+		}
 
 	def reset_position(self):
 		'''
@@ -130,12 +135,11 @@ class ExcelWriter:
 		'''
 		self.balances = self.starting_balances[self.year].copy()
 
-	def set_starting_balances(self, year: int, balances: dict[int, pd.DataFrame]):
+	def set_starting_balances(self):
 		'''
 		set the starting balances of the year
-		:year: year these balances apply to
 		'''
-		self.starting_balances[year + 1] = self.balances.copy()
+		self.starting_balances[self.year + 1] = self.balances.copy()
 
 
 	def write_table(self, data: pd.DataFrame, table_name: str, columns: list[dict], total: bool = False, headers: bool = True):
@@ -272,7 +276,7 @@ class ExcelWriter:
 		elif month == 13:
 			col = start_col
 			for month in range(1, 13):
-				if month not in self.data[self.year]:
+				if month not in self.loader.data[self.year]:
 					continue
 				start_row, start_col = self.write_month_table_helper(
 					data,
@@ -284,9 +288,9 @@ class ExcelWriter:
 		elif month == 14:
 			col = start_col
 			old_year = self.year
-			for year in sorted(self.data):
+			for year in sorted(self.loader.data):
 				self.year = year
-				for month in self.data[year]:
+				for month in self.loader.data[year]:
 					start_row, start_col = self.write_month_table_helper(
 						data,
 						month,
@@ -432,10 +436,10 @@ class ExcelWriter:
 			['Net Income', all_income_sum - all_expenses_sum],
 		], columns = [' ', 'Yearly'])
 		if month == 13:
-			month_count = len(self.data[self.year])
+			month_count = len(self.loader.data[self.year])
 			budget_info['Monthly'] = budget_info['Yearly'] / month_count
 		elif month == 14:
-			month_count = sum(len(year_obj) for year_obj in self.data.values())
+			month_count = sum(len(year_obj) for year_obj in self.loader.data.values())
 			budget_info['Monthly'] = budget_info['Yearly'] / month_count
 			budget_info = budget_info.rename(columns = {'Yearly': 'Total'})
 		self.write_title('Overall Budget', len(budget_info.columns))
@@ -549,7 +553,7 @@ class ExcelWriter:
 			default_transactions.Category.value_counts(),
 			on='Category'
 		).rename(columns={'count': 'Transaction Count'})
-		budget = self.monthly_budget[self.year][month] if budget is None else budget
+		budget = self.loader.monthly_budget[self.year][month] if budget is None else budget
 		extra_budget_cols = 'Amount', 'Transaction Count', 'CashBack Reward'
 		budget_categories_df = budget.join(
 			pivot[['Category', *extra_budget_cols]].set_index('Category'),
@@ -926,33 +930,16 @@ class ExcelWriter:
 					show_value
 				)
 
-	def handle_month(self, month: int, write_month: bool = True) -> bool:
-		'''
-		read and write data for the month
-		:month: int, 1-12 number representing the months
-		:write_month: optional boolean, whether or not to write the month
-		:returns: true if it succeeds and false if it fails
-		'''
-		if month < 1 or month > 12:
-			raise ValueError(f'month must be between 1-12 inclusive. actual = {month}')
-		data = self.read_month(month)
-		if data is None:
-			print(f'Couldn \'t find transaction file for month {month}. Continuing')
-			return False
-		if not data.empty and write_month:
-			self.write_month(month, data)
-		return True
-
 	def write_summary(self):
 		'''
 		write a sheet for a summary of the whole year
 		'''
-		if len(self.data[self.year]) <= 0:
+		if len(self.loader.data[self.year]) <= 0:
 			return
-		self.monthly_budget[self.year][13] = pd.concat(self.monthly_budget[self.year].values()).groupby('Category', sort=False).sum().reset_index()
+		self.loader.monthly_budget[self.year][13] = pd.concat(self.loader.monthly_budget[self.year].values()).groupby('Category', sort=False).sum().reset_index()
 		self.write_month(
 			13,
-			pd.concat(self.data[self.year].values()),
+			pd.concat(self.loader.data[self.year].values()),
 			f'Summary{self.year}'
 		)
 
@@ -961,8 +948,8 @@ class ExcelWriter:
 		write a sheet for a summary of all recorded history
 		write_summary must be called for this to work correctly
 		'''
-		budget = pd.concat(map(lambda x: x.get(13, pd.DataFrame()), self.monthly_budget.values())).groupby('Category', sort=False).sum().reset_index()
-		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
+		budget = pd.concat(map(lambda x: x.get(13, pd.DataFrame()), self.loader.monthly_budget.values())).groupby('Category', sort=False).sum().reset_index()
+		data = pd.concat(reduce(lambda x, y: x + list(y.values()), self.loader.data.values(), [])).sort_values('Date')
 		self.write_month(14, data, 'SummaryAll', budget)
 
 	def write_all_transactions(self):
@@ -972,7 +959,7 @@ class ExcelWriter:
 		sheet_name = 'allTransactions'
 		table_name = sheet_name + '_all_transactions_table'
 		self.sheet = self.workbook.add_worksheet(sheet_name)
-		data = self.get_all_data()
+		data = self.loader.get_all_data()
 		self.reset_position()
 		self.reset_style_count()
 		self.write_title('All Transactions', len(data.columns))
@@ -1068,10 +1055,20 @@ class ExcelWriter:
 	def save(self):
 		self.workbook.close()
 
-	def set_year(self, year: int):
-		self.year = year
-		if year not in self.data:
-			self.data[year] = {}
-		if year not in self.monthly_budget:
-			self.monthly_budget[year] = {}
-
+	def write_excel(self):
+		now = datetime.datetime.now()
+		for year, months in self.loader.data.items():
+			self.year = year
+			for month, df in months.items():
+				self.write_month(month, df)
+				if year < now.year or month + 3 < now.month:
+					self.hide(month)
+			self.reset_balances()
+			self.write_summary()
+		self.reset_balances()
+		self.write_summary_all()
+		self.write_all_transactions()
+		self.year = now.year
+		self.focus(now.month)
+		self.full_screen()
+		self.save()
