@@ -1,4 +1,4 @@
-from .utils import *
+from utils import *
 from glob import glob
 import datetime
 import json
@@ -66,6 +66,8 @@ class DataLoader:
 		data.Note = tuple_col.apply(lambda x: x[0])
 		data['CashBack %'] = tuple_col.apply(lambda x: x[1])
 		data['CashBack Reward'] = data.Amount * data['CashBack %']
+		if year not in self.data:
+			self.data[year] = {}
 		self.data[year][month] = data.copy()
 		return data
 
@@ -157,6 +159,8 @@ class DataLoader:
 				year -= 1
 			df = self.read_budget(month, year, max_recursions - 1)
 			df.to_csv(filename, index = False)
+		if year not in self.monthly_budget:
+			self.monthly_budget[year] = {}
 		self.monthly_budget[year][month] = df
 		return df
 
@@ -169,6 +173,6 @@ class DataLoader:
 		current_year = get_year()
 		for year in range(starting_year, current_year + 1):
 			for month in range(1, 13):
-				self.read_month(month, year)
-				self.read_budget(month, year)
+				if self.read_month(month, year) is not None:
+					self.read_budget(month, year)
 		self.read_starting_balances(starting_year)

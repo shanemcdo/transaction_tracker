@@ -1,16 +1,9 @@
-#!/usr/bin/env python3
-
-import os
-
-from xlsxwriter.utility import xl_rowcol_to_cell
-import datetime
-import calendar
-import pandas as pd
+from utils import *
 from functools import reduce
 from itertools import chain
-
-from .utils import *
-
+from xlsxwriter.utility import xl_rowcol_to_cell
+import calendar
+import pandas as pd
 
 def stringify_date(day: int) -> str:
 	if day < 1:
@@ -29,7 +22,7 @@ def clean_table_name(table_name: str) -> str:
 	return table_name.replace(' ', '_').replace('&', '') + 'Table'
 
 
-class Writer:
+class ExcelWriter:
 
 	def __init__(self, filename: str):
 		self.excelWriter = pd.ExcelWriter(filename, engine='xlsxwriter') # pyright: ignore
@@ -1082,33 +1075,3 @@ class Writer:
 		if year not in self.monthly_budget:
 			self.monthly_budget[year] = {}
 
-def main():
-	'''Driver Code'''
-	now = datetime.datetime.now()
-	datestring = now.strftime('%Y%m%d %H%M%S')
-	calendar.setfirstweekday(calendar.SUNDAY)
-	current_year = get_year()
-	writer = Writer(os.path.join(TRANSACTION_REPORTS_DIR, f'transactions {datestring}.xlsx'))
-	for year in range(STARTING_YEAR, current_year + 1):
-		writer.set_year(year)
-		writer.get_starting_balances()
-		any_success = False
-		for month in range(1,13):
-			write_month = current_year == year and month + 3 >= now.month
-			any_success |= writer.handle_month(month, write_month)
-			if write_month:
-				writer.hide(month)
-		if any_success:
-			writer.reset_balances()
-			writer.write_summary()
-	writer.set_year(STARTING_YEAR)
-	writer.reset_balances()
-	writer.write_summary_all()
-	writer.write_all_transactions()
-	writer.set_year(current_year)
-	writer.focus(now.month)
-	writer.full_screen()
-	writer.save()
-
-if __name__ == '__main__':
-	main()
