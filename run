@@ -1,10 +1,23 @@
 #!/bin/sh
 
-source venv/bin/activate && \
+open_excel_sheet() {
+	most_recent="$(ls -t transaction_reports/* | head -n1)"
+	if [ -n "$most_recent" ]; then
+		ln -f "$most_recent" "transaction_reports/active.xlsx"
+		[ "$1" != "-d" ] && open "$most_recent"
+	fi
+}
+
+read_dotenv() {
+	awk -F= < .env "\$1 == \"$1\" { gsub(/ *#.*/, \"\") ;print \$2}"
+}
+
+DISPLAY_METHOD="$(read_dotenv DISPLAY_METHOD)"
+
+. venv/bin/activate && \
 	./main.py 2>&1 || \
 	exit 1
-most_recent="$(ls -t transaction_reports/* | head -n1)"
-if [ ! -z "$most_recent" ]; then
-	ln -f "$most_recent" "transaction_reports/active.xlsx"
-	[ "$1" != "-d" ] && open "$most_recent"
+
+if [ "$DISPLAY_METHOD" = "Excel" ] || [ "$DISPLAY_METHOD" = "Both" ]; then
+	open_excel_sheet "$@"
 fi
