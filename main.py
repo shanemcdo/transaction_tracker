@@ -21,8 +21,8 @@ def main():
 	loader = DataLoader()
 	loader.load(STARTING_YEAR)
 	write_excel(loader)
-	# if GOOGLE_SHEETS_ENABLED:
-	# 	write_google_sheets(loader)
+	if GOOGLE_SHEETS_ENABLED:
+		write_google_sheets(loader)
 
 if __name__ == '__main__':
 	main()
