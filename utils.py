@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import datetime
 import os
-import pandas as pd
 
 MONTHS = {
 	1: 'January',
