@@ -1173,7 +1173,7 @@ class Writer:
 		data.Date = data.Date.map(lambda x: x.strftime('%Y/%m/%d'))
 		gc = gspread.oauth() # pyright: ignore
 		sh = gc.open_by_url(SHEET_URL)
-		datasheet = sh.worksheet('Transactions')
+		datasheet = sh.worksheet('Raw Transactions')
 		datasheet.clear()
 		datasheet.update(data.values.tolist(), value_input_option = 'USER_ENTERED') # pyright: ignore
 		budgetsheet = sh.worksheet('Budgets')
