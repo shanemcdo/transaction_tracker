@@ -21,3 +21,8 @@ DISPLAY_METHOD="$(read_dotenv DISPLAY_METHOD)"
 if [ "$DISPLAY_METHOD" = "Excel" ] || [ "$DISPLAY_METHOD" = "Both" ]; then
 	open_excel_sheet "$@"
 fi
+if [ "$DISPLAY_METHOD" = "Sheets" ] || [ "$DISPLAY_METHOD" = "Both" ]; then
+	URL="$(read_dotenv SHEET_URL)"
+	echo "Opening '$URL'"
+	chrome "$URL"
+fi
