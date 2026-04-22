@@ -92,3 +92,9 @@ writes to a google sheet at the `$SHEET_URL` URL.
 
 The configuration and auth files are stored in `~/.config/gspread/` as `authorized_user.json` and `credentials.json`.
 
+### Token expired Error
+
+![error screenshot "google.auth.exceptions.RefreshError: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})"](./error.png)
+`google.auth.exceptions.RefreshError: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})`
+
+run `rm ~/.config/gspread/authorized_user.json` and then re authenticate with google account which will recreate the deleted file.
