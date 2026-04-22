@@ -59,11 +59,29 @@ example:
 
 ## output
 
+### Excel
+
+Enabled when `$DISPLAY_METHOD` is `Excel` or `Both`.
+
 writes files in the `$TRANSACTIONS_REPORTS_DIR` folder.
 
 The output created is of the name `transactions YYYYmmdd HHMMSS.xlsx`.
 
 An excel file is created.
+
+### Google Sheets
+
+Enabled when `$DISPLAY_METHOD` is `Sheets` or `Both`.
+
+writes to a google sheet at the `$SHEET_URL` URL.
+
+#### Troubleshooting google sheests
+
+[This](https://console.cloud.google.com/auth/overview?project=transactions-tracker-493305) is the google sheets OAuth dashboard.
+
+[This](https://docs.gspread.org/en/latest/oauth2.html#enable-api-access) is the documentation for enabling api access for gspread.
+
+The configuration and auth files are stored in `~/.config/gspread/` as `authorized_user.json` and `credentials.json`.
 
 ## Running
 
