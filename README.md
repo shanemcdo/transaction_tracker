@@ -75,14 +75,6 @@ Enabled when `$DISPLAY_METHOD` is `Sheets` or `Both`.
 
 writes to a google sheet at the `$SHEET_URL` URL.
 
-#### Troubleshooting google sheests
-
-[This](https://console.cloud.google.com/auth/overview?project=transactions-tracker-493305) is the google sheets OAuth dashboard.
-
-[This](https://docs.gspread.org/en/latest/oauth2.html#enable-api-access) is the documentation for enabling api access for gspread.
-
-The configuration and auth files are stored in `~/.config/gspread/` as `authorized_user.json` and `credentials.json`.
-
 ## Running
 
 - Using [virtualenv](https://pypi.org/project/virtualenv/) run `virtualenv venv` to create a virtual environment.
@@ -91,3 +83,12 @@ The configuration and auth files are stored in `~/.config/gspread/` as `authoriz
 - This is only required once.
 - Modify the .env to customize paths and names.
 - use `./main.py` or `./run` in order to run the program.
+
+## Troubleshooting google sheests
+
+[This](https://console.cloud.google.com/auth/overview?project=transactions-tracker-493305) is the google sheets OAuth dashboard.
+
+[This](https://docs.gspread.org/en/latest/oauth2.html#enable-api-access) is the documentation for enabling api access for gspread.
+
+The configuration and auth files are stored in `~/.config/gspread/` as `authorized_user.json` and `credentials.json`.
+
