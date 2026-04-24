@@ -153,11 +153,12 @@ class DataLoader:
 		except FileNotFoundError as e:
 			if max_recursions < 1:
 				raise e
-			month -= 1
-			if month < 1:
-				month = 12
-				year -= 1
-			df = self.read_budget(month, year, max_recursions - 1)
+			new_month = month - 1
+			new_year = year
+			if new_month < 1:
+				new_month = 12
+				new_year -= 1
+			df = self.read_budget(new_month, new_year, max_recursions - 1)
 			df.to_csv(filename, index = False)
 		if year not in self.monthly_budget:
 			self.monthly_budget[year] = {}
