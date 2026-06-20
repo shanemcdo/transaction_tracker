@@ -12,10 +12,10 @@ class SheetsWriter:
 		self.data_loader = loader
 		try:
 			gc = gspread.oauth() # pyright: ignore
+			self.sheets = gc.open_by_url(SHEET_URL)
 		except RefreshError:
 			print('Hit refresh error. Token likely expired. Remove and regenerate.')
 			exit(2)
-		self.sheets = gc.open_by_url(SHEET_URL)
 
 	def write_raw_transactions(self):
 		data = self.data_loader.get_all_data()
