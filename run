@@ -15,8 +15,11 @@ read_dotenv() {
 DISPLAY_METHOD="$(read_dotenv DISPLAY_METHOD)"
 
 . venv/bin/activate && \
-	./main.py 2>&1 || \
-	exit 1
+	./main.py 2>&1
+error_code="$?"
+if [ "$error_code" -ne 0 ]; then
+	exit "$error_code"
+fi
 
 if [ "$DISPLAY_METHOD" = "Excel" ] || [ "$DISPLAY_METHOD" = "Both" ]; then
 	open_excel_sheet "$@"
