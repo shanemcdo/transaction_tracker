@@ -12,7 +12,13 @@ while true; do
 		echo "Updating last_update: '$last_update'"
 		echo "Running run script"
 		./run >output.txt 2>&1
-		if [ "$?" -ne 0 ]; then
+		error_code="$?"
+		if [ "$error_code" -eq 2 ]; then # if auth token is expired
+			echo "Removing authorized user file"
+			./rm_auth_user.sh # remove authorized user file
+			echo "Re-Running run script"
+			./run >output.txt 2>&1
+		elif [ "$error_code" -ne 0 ]; then
 			echo "run script failed"
 			exit 1
 		fi

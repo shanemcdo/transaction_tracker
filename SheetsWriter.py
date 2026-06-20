@@ -2,6 +2,7 @@ from DataLoader import DataLoader
 from utils import *
 import gspread
 import pandas as pd
+from google.auth.exceptions import RefreshError
 
 SHEET_URL = getenv('SHEET_URL')
 
@@ -9,7 +10,11 @@ class SheetsWriter:
 
 	def __init__(self, loader: DataLoader):
 		self.data_loader = loader
-		gc = gspread.oauth() # pyright: ignore
+		try:
+			gc = gspread.oauth() # pyright: ignore
+		except RefreshError:
+			print('Hit refresh error. Token likely expired. Remove and regenerate.')
+			exit(2)
 		self.sheets = gc.open_by_url(SHEET_URL)
 
 	def write_raw_transactions(self):
