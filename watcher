@@ -20,6 +20,7 @@ while true; do
 			./run >output.txt 2>&1
 			error_code="$?"
 		fi
+		echo "Done"
 		if [ "$error_code" -ne 0 ]; then
 			echo "run script failed"
 			exit 1
