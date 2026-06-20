@@ -18,7 +18,9 @@ while true; do
 			./rm_auth_user.sh # remove authorized user file
 			echo "Re-Running run script"
 			./run >output.txt 2>&1
-		elif [ "$error_code" -ne 0 ]; then
+			error_code="$?"
+		fi
+		if [ "$error_code" -ne 0 ]; then
 			echo "run script failed"
 			exit 1
 		fi
