@@ -4,6 +4,7 @@ from utils import *
 from DataLoader import DataLoader
 from ExcelWriter import ExcelWriter
 from SheetsWriter import SheetsWriter
+from sys import argv
 import calendar
 
 STARTING_YEAR = int(getenv('STARTING_YEAR'))
@@ -20,7 +21,8 @@ def main():
 	'''Driver Code'''
 	loader = DataLoader()
 	loader.load(STARTING_YEAR)
-	match DISPLAY_METHOD:
+	display_method = argv[1] if len(argv) > 1 else DISPLAY_METHOD
+	match display_method:
 		case 'Excel':
 			write_excel(loader)
 		case 'Sheets':
