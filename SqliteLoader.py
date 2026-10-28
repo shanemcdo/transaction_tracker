@@ -2,6 +2,8 @@ from Loader import Loader
 import sqlite3
 import datetime
 import calendar
+import glob
+import os
 import pandas as pd
 from utils import *
 
@@ -10,6 +12,7 @@ from utils import *
 #              v           v
 EPOCH_OFFSET = 978307200 + 32400
 AUTO_BACKUP_DB_DIR = getenv('AUTO_BACKUP_DB_DIR')
+BACKUP_DB_DIR = getenv('BACKUP_DB_DIR')
 
 class SqliteLoader(Loader):
 	'''
@@ -17,10 +20,12 @@ class SqliteLoader(Loader):
 	'''
 
 	def get_db_filename(self) -> str:
-		glob_str = os.path.join(AUTO_BACKUP_DB_DIR, '*')
-		file = get_latest_file(glob_str)
-		if file is None:
-			raise FileNotFoundError(f'Could not glob "{glob_str}"')
+		auto_backup_glob = os.path.join(AUTO_BACKUP_DB_DIR, 'Auto [0-9][0-9]-???-[0-9][0-9][0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]')
+		backup_glob = os.path.join(BACKUP_DB_DIR, '[0-9][0-9]-???-[0-9][0-9][0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]')
+		files = glob.glob(auto_backup_glob) + glob.glob(backup_glob)
+		if len(files) < 1:
+			raise FileNotFoundError(f'Could not glob "{auto_backup_glob}" or "{backup_glob}"')
+		file = max(files, key = os.path.getctime)
 		return file
 
 	def load(self, starting_year: int):

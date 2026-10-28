@@ -46,12 +46,3 @@ def parse_note(note: str, sep: str = '|') -> tuple[str, float]:
 		except ValueError:
 			pass
 	return note.strip('\n\r\t '), 0.0
-
-def get_latest_file(glob_str: str) -> str | None:
-	'''
-	find the most recently modified file of the glob
-	'''
-	files = glob.glob(glob_str)
-	if len(files) < 1:
-		return None
-	return max(files, key = os.path.getctime)
