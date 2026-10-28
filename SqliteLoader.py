@@ -6,7 +6,7 @@ import calendar
 from utils import parse_note
 
 #              magic chatgpt number
-#              |           9 hours
+#              |           9 hours (for weird japan honeymoon dates)
 #              v           v
 EPOCH_OFFSET = 978307200 + 32400
 
