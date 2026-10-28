@@ -5,7 +5,6 @@ from functools import reduce
 
 from abc import ABC, abstractmethod
 
-# unix glob format
 BUDGETS_DIR = getenv('BUDGETS_DIR')
 BALANCES_DIR = getenv('BALANCES_DIR')
 
