@@ -3,8 +3,6 @@ import sqlite3
 import datetime
 import calendar
 import pandas as pd
-import glob
-import os
 from utils import *
 
 #              magic chatgpt number
@@ -19,8 +17,11 @@ class SqliteLoader(Loader):
 	'''
 
 	def get_db_filename(self) -> str:
-		files = glob.glob(os.path.join(AUTO_BACKUP_DB_DIR, '*'))
-		return max(files, key = os.path.getctime)
+		glob_str = os.path.join(AUTO_BACKUP_DB_DIR, '*')
+		file = get_latest_file(glob_str)
+		if file is None:
+			raise FileNotFoundError(f'Could not glob "{glob_str}"')
+		return file
 
 	def load(self, starting_year: int):
 		filename = self.get_db_filename()
