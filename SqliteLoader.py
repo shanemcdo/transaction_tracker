@@ -59,7 +59,7 @@ class SqliteLoader(Loader):
 			cb_reward = amnt * cb
 			df_row = pd.DataFrame(
 				data = [[date, name, amnt, note, acnt, cb, cb_reward]],
-				columns = ['Date', 'Category', 'Amount', 'Note', 'Account', 'Cashback %', 'CashBack Reward']
+				columns = ['Date', 'Category', 'Amount', 'Note', 'Account', 'CashBack %', 'CashBack Reward']
 			)
 			# TODO: do this in a more efficient way
 			if date.year not in self.data:
