@@ -63,5 +63,7 @@ class SqliteLoader(Loader):
 				self.data[date.year][date.month] = df_row
 			else:
 				self.data[date.year][date.month] = pd.concat([self.data[date.year][date.month], df_row])
-			# print(date, name, amnt, note, acnt, cb, cb_reward, sep=',')
+		for year, values in self.data.items():
+			for month in values.keys():
+				self.read_budget(month, year)
 		self.read_starting_balances(starting_year)
