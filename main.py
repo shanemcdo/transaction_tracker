@@ -21,7 +21,7 @@ def write_google_sheets(loader: Loader):
 
 def main():
 	'''Driver Code'''
-	load_method = argv[1] if len(argv) > 1 else LOAD_METHOD
+	load_method = argv[1] if len(argv) > 1 and argv[1] != '' else LOAD_METHOD
 	match load_method:
 		case 'CSV':
 			print('Loading from CSV')
@@ -32,7 +32,7 @@ def main():
 		case method:
 			raise ValueError(f'Unexpected LOAD_METHOD: "{method}"')
 	loader.load(STARTING_YEAR)
-	display_method = argv[2] if len(argv) > 2 else DISPLAY_METHOD
+	display_method = argv[2] if len(argv) > 2 and argv[2] != '' else DISPLAY_METHOD
 	match display_method:
 		case 'Excel':
 			print('Writing to Excel')
