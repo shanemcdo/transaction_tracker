@@ -11,6 +11,8 @@ from utils import *
 #              |           9 hours (for weird japan honeymoon dates)
 #              v           v
 EPOCH_OFFSET = 978307200 + 32400
+AUTO_BACKUP_FILENAME_FORMAT = getenv('AUTO_BACKUP_FILENAME_FORMAT')
+BACKUP_FILENAME_FORMAT = getenv('BACKUP_FILENAME_FORMAT')
 AUTO_BACKUP_DB_DIR = getenv('AUTO_BACKUP_DB_DIR')
 BACKUP_DB_DIR = getenv('BACKUP_DB_DIR')
 
@@ -20,8 +22,8 @@ class SQLiteLoader(Loader):
 	'''
 
 	def get_db_filename(self) -> str:
-		auto_backup_glob = os.path.join(AUTO_BACKUP_DB_DIR, 'Auto [0-9][0-9]-???-[0-9][0-9][0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]')
-		backup_glob = os.path.join(BACKUP_DB_DIR, '[0-9][0-9]-???-[0-9][0-9][0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]')
+		auto_backup_glob = os.path.join(AUTO_BACKUP_DB_DIR, AUTO_BACKUP_FILENAME_FORMAT)
+		backup_glob = os.path.join(BACKUP_DB_DIR, BACKUP_FILENAME_FORMAT)
 		files = glob.glob(auto_backup_glob) + glob.glob(backup_glob)
 		if len(files) < 1:
 			raise FileNotFoundError(f'Could not glob "{auto_backup_glob}" or "{backup_glob}"')
