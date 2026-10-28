@@ -3,12 +3,15 @@ import sqlite3
 import datetime
 import calendar
 import pandas as pd
-from utils import parse_note
+import glob
+import os
+from utils import *
 
 #              magic chatgpt number
 #              |           9 hours (for weird japan honeymoon dates)
 #              v           v
 EPOCH_OFFSET = 978307200 + 32400
+AUTO_BACKUP_DB_DIR = getenv('AUTO_BACKUP_DB_DIR')
 
 class SqliteLoader(Loader):
 	'''
@@ -16,7 +19,8 @@ class SqliteLoader(Loader):
 	'''
 
 	def get_db_filename(self) -> str:
-		return '/Users/shane/temp/trans.db' # TODO: find actual filename
+		files = glob.glob(os.path.join(AUTO_BACKUP_DB_DIR, '*'))
+		return max(files, key = os.path.getctime)
 
 	def load(self, starting_year: int):
 		filename = self.get_db_filename()
