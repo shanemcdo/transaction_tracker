@@ -19,5 +19,14 @@ class TransactionTrackerTests(unittest.TestCase):
 			sqlite_df
 		)
 
+		for year, value in csv_loader.monthly_budget.items():
+			for month, df in value.items():
+				assert_frame_equal(df, sqlite_loader.monthly_budget[year][month])
+		for year, value in sqlite_loader.monthly_budget.items():
+			for month, df in value.items():
+				assert_frame_equal(df, csv_loader.monthly_budget[year][month])
+
+		self.assertDictEqual(csv_loader.starting_balances, sqlite_loader.starting_balances)
+
 if __name__ == '__main__':
 	unittest.main()
