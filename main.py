@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from utils import *
-from DataLoader import DataLoader
+from CsvLoader import CsvLoader
 from ExcelWriter import ExcelWriter
 from SheetsWriter import SheetsWriter
 from sys import argv
@@ -10,16 +10,16 @@ import calendar
 STARTING_YEAR = int(getenv('STARTING_YEAR'))
 DISPLAY_METHOD = getenv('DISPLAY_METHOD')
 
-def write_excel(loader: DataLoader):
+def write_excel(loader: CsvLoader):
 	calendar.setfirstweekday(calendar.SUNDAY)
 	ExcelWriter(loader).write_excel()
 
-def write_google_sheets(loader: DataLoader):
+def write_google_sheets(loader: CsvLoader):
 	SheetsWriter(loader).write_google_sheets()
 
 def main():
 	'''Driver Code'''
-	loader = DataLoader()
+	loader = CsvLoader()
 	loader.load(STARTING_YEAR)
 	display_method = argv[1] if len(argv) > 1 else DISPLAY_METHOD
 	match display_method:

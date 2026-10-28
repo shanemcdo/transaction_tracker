@@ -14,7 +14,11 @@ RAW_TRANSACTIONS_DIR = getenv('RAW_TRANSACTIONS_DIR')
 def parse_date(date: str) -> datetime.date:
 	return datetime.datetime.strptime(date, '%m/%d/%Y').date()
 
-class DataLoader:
+class CsvLoader:
+	'''
+	Loads Export CSVs from "Spending Tracker App"
+	'''
+
 	def __init__(self):
 		# {
 		#   year: {
