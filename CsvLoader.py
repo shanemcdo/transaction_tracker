@@ -53,6 +53,8 @@ class CsvLoader(Loader):
 			glob_pattern,
 			root_dir = RAW_TRANSACTIONS_DIR
 		)
+		# this needs to be used instead of get_latest_file
+		# there are some ties with get_latest file that make it not work
 		if len(files) < 1:
 			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
 		elif len(files) == 1:
