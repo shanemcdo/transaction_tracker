@@ -2,16 +2,34 @@
 # The purpose of this script is to continually run and to
 # create a new generated sheet when new raw input is detected
 
+get_most_recent_export() {
+	ls -t raw_transactions | head -1
+}
+
+get_most_recent_backup() {
+	ls -t backup_db_files/??-???-????* auto_backup_db_files/* | head -1
+}
+
 trap "echo 'Exiting Watcher'; exit;" SIGINT SIGTERM
-last_update=''
+last_export="$(get_most_recent_export)"
+last_backup="$(get_most_recent_backup)"
 while true; do
-	most_recent="`ls -t raw_transactions | head -1`"
-	if [ "$most_recent" != "$last_update" ]; then
-		last_update="$most_recent"
+	most_recent_export="$(get_most_recent_export)"
+	most_recent_backup="$(get_most_recent_backup)"
+	if [ "$most_recent_export" != "$last_export" -o "$most_recent_backup" != "$last_backup" ]; then
+		if [ "$most_recent_export" != "$last_export" ]; then
+			load_method='CSV'
+			last_export="$most_recent_export"
+			echo "Updating last_export: '$last_export'"
+		else
+			load_method='SQLite'
+			last_backup="$most_recent_backup"
+			echo "Updating last_backup: '$last_backup'"
+		fi
+		echo "using load method: $load_method"
 		date
-		echo "Updating last_update: '$last_update'"
 		echo "Running run script"
-		./run >output.txt 2>&1
+		./run "$load_method" >output.txt 2>&1
 		error_code="$?"
 		if [ "$error_code" -eq 2 ]; then # if auth token is expired
 			echo "Removing authorized user file"
