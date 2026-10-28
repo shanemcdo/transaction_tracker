@@ -9,8 +9,9 @@ from utils import *
 
 #              magic chatgpt number
 #              |           9 hours (for weird japan honeymoon dates)
-#              v           v
-EPOCH_OFFSET = 978307200 + 32400
+#              |           |   mins seconds
+#              v           v   v    v
+EPOCH_OFFSET = 978307200 + 9 * 60 * 60
 AUTO_BACKUP_FILENAME_FORMAT = getenv('AUTO_BACKUP_FILENAME_FORMAT')
 BACKUP_FILENAME_FORMAT = getenv('BACKUP_FILENAME_FORMAT')
 AUTO_BACKUP_DB_DIR = getenv('AUTO_BACKUP_DB_DIR')
