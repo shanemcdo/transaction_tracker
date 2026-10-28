@@ -12,6 +12,7 @@ EPOCH_OFFSET = 978307200 + 32400
 
 if __name__ == '__main__':
 	filename = '/Users/shane/temp/trans.db'
+	starting_year = 2024
 	con = sqlite3.connect(filename)
 	cur = con.cursor()
 
@@ -30,6 +31,7 @@ if __name__ == '__main__':
 		zcategory cat,
 		zprofile acnt
 		WHERE date_utc < datetime('{now.year}-{now.month}-{month_end} 23:59:59')
+		AND date_utc > datetime('{starting_year}-01-01 00:00:00')
 		AND tran.ztype <> 'Carry'
 		AND tran.zcategory = cat.z_pk
 		AND IFNULL(tran.zprofile, {default_acnt_pk}) = acnt.z_pk
