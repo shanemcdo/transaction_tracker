@@ -44,4 +44,4 @@ def parse_note(note: str, sep: str = '|') -> tuple[str, float]:
 			return note, float(cashback) / 100
 		except ValueError:
 			pass
-	return note, 0.0
+	return note.strip('\n\r\t '), 0.0
