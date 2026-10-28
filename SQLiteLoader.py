@@ -14,7 +14,7 @@ EPOCH_OFFSET = 978307200 + 32400
 AUTO_BACKUP_DB_DIR = getenv('AUTO_BACKUP_DB_DIR')
 BACKUP_DB_DIR = getenv('BACKUP_DB_DIR')
 
-class SqliteLoader(Loader):
+class SQLiteLoader(Loader):
 	'''
 	Loads from sqlite db files from "Spending Tracker App"
 	'''

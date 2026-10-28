@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 from utils import *
-from CsvLoader import CsvLoader, Loader
-from SqliteLoader import SqliteLoader
+from CSVLoader import CSVLoader, Loader
+from SQLiteLoader import SQLiteLoader
 from ExcelWriter import ExcelWriter
 from SheetsWriter import SheetsWriter
 from sys import argv
@@ -24,10 +24,10 @@ def main():
 	match LOAD_METHOD:
 		case 'CSV':
 			print('Loading from CSV')
-			loader = CsvLoader()
+			loader = CSVLoader()
 		case 'SQLite':
 			print('Loading from SQLite database')
-			loader = SqliteLoader()
+			loader = SQLiteLoader()
 		case method:
 			raise ValueError(f'Unexpected LOAD_METHOD: "{method}"')
 	loader.load(STARTING_YEAR)

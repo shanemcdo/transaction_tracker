@@ -12,7 +12,7 @@ class Loader(ABC):
 	'''
 	Abstract and must be inherited
 	Loads budgets and Balances CSVs
-	Acts as a parent class for CsvLoader and SqliteLoader
+	Acts as a parent class for CSVLoader and SQLiteLoader
 	'''
 
 	def __init__(self):
