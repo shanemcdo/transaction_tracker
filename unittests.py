@@ -3,6 +3,7 @@
 import unittest
 from CSVLoader import CSVLoader
 from SQLiteLoader import SQLiteLoader
+from pandas.testing import assert_frame_equal
 
 class TransactionTrackerTests(unittest.TestCase):
 
@@ -13,12 +14,9 @@ class TransactionTrackerTests(unittest.TestCase):
 		sqlite_loader = SQLiteLoader()
 		sqlite_loader.load(2024)
 		sqlite_df = sqlite_loader.get_all_data()
-		print(csv_df)
-		print(sqlite_df)
-		self.assertEqual(
+		assert_frame_equal(
 			csv_df,
-			sqlite_df,
-			'Two load methods got different results'
+			sqlite_df
 		)
 
 if __name__ == '__main__':

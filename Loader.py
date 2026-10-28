@@ -40,7 +40,8 @@ class Loader(ABC):
 		'''
 		concat all data into one pandas object
 		'''
-		return pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), [])).sort_values('Date')
+		df = pd.concat(reduce(lambda x, y: x + list(y.values()), self.data.values(), []))
+		return df.sort_values(df.columns.to_list()).reset_index(drop = True)
 
 	def read_starting_balances(self, year: int):
 		'''
