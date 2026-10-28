@@ -1,4 +1,4 @@
-from CsvLoader import CsvLoader
+from Loader import Loader
 from functools import reduce
 from itertools import chain
 from utils import *
@@ -40,7 +40,7 @@ def clean_table_name(table_name: str) -> str:
 
 class ExcelWriter:
 
-	def __init__(self, loader: CsvLoader):
+	def __init__(self, loader: Loader):
 		self.loader = loader
 		now = datetime.datetime.now()
 		datestring = now.strftime('%Y%m%d %H%M%S')

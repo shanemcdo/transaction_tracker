@@ -1,4 +1,4 @@
-from CsvLoader import CsvLoader
+from Loader import Loader
 from utils import *
 import gspread
 import pandas as pd
@@ -8,7 +8,7 @@ SHEET_URL = getenv('SHEET_URL')
 
 class SheetsWriter:
 
-	def __init__(self, loader: CsvLoader):
+	def __init__(self, loader: Loader):
 		self.data_loader = loader
 		try:
 			gc = gspread.oauth() # pyright: ignore

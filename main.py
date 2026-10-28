@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from utils import *
-from CsvLoader import CsvLoader
+from CsvLoader import CsvLoader, Loader
 from ExcelWriter import ExcelWriter
 from SheetsWriter import SheetsWriter
 from sys import argv
@@ -10,11 +10,11 @@ import calendar
 STARTING_YEAR = int(getenv('STARTING_YEAR'))
 DISPLAY_METHOD = getenv('DISPLAY_METHOD')
 
-def write_excel(loader: CsvLoader):
+def write_excel(loader: Loader):
 	calendar.setfirstweekday(calendar.SUNDAY)
 	ExcelWriter(loader).write_excel()
 
-def write_google_sheets(loader: CsvLoader):
+def write_google_sheets(loader: Loader):
 	SheetsWriter(loader).write_google_sheets()
 
 def main():
