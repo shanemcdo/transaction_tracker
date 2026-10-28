@@ -12,10 +12,17 @@ read_dotenv() {
 	awk -F= < .env "\$1 == \"$1\" { gsub(/ *#.*/, \"\") ;print \$2}"
 }
 
-DISPLAY_METHOD="$(read_dotenv DISPLAY_METHOD)"
+LOAD_METHOD="$1"
+if [ -z "$LOAD_METHOD" ]; then
+	LOAD_METHOD="$(read_dotenv LOAD_METHOD)"
+fi
+DISPLAY_METHOD="$2"
+if [ -z "$DISPLAY_METHOD" ]; then
+	DISPLAY_METHOD="$(read_dotenv DISPLAY_METHOD)"
+fi
 
 . venv/bin/activate && \
-	./main.py 2>&1
+	./main.py "$@" 2>&1
 error_code="$?"
 if [ "$error_code" -ne 0 ]; then
 	exit "$error_code"
