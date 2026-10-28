@@ -28,3 +28,20 @@ DEFAULT_ACCOUNT = getenv('DEFAULT_ACCOUNT')
 def get_year() -> int:
 	return datetime.datetime.now().year
 
+def parse_note(note: str, sep: str = '|') -> tuple[str, float]:
+	'''
+	Split note on seperator string and return parsed note and cashback
+	:note: original note containing note message and cashback %
+	:sep: the string to split the note on
+	:return: note message and cashback percent in a tuple
+	'''
+	note = str(note)
+	if note == 'nan':
+		note = ''
+	if sep in note:
+		try:
+			note, cashback = map(lambda x: x.strip('%\n\r\t '), note.split(sep, 1))
+			return note, float(cashback) / 100
+		except ValueError:
+			pass
+	return note, 0.0

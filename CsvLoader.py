@@ -4,6 +4,7 @@ import datetime
 import json
 import pandas as pd
 from functools import reduce
+from utils import parse_note
 
 # unix glob format
 RAW_TRANSACTION_FILENAME_FORMAT = getenv('RAW_TRANSACTION_FILENAME_FORMAT')
@@ -66,7 +67,7 @@ class CsvLoader:
 		data.Amount *= -1
 		data = data.loc[data.Category != 'Carry Over']
 		data.Date = data.Date.apply(parse_date)
-		tuple_col = data.Note.apply(self.parse_note)
+		tuple_col = data.Note.apply(parse_note)
 		data.Note = tuple_col.apply(lambda x: x[0])
 		data['CashBack %'] = tuple_col.apply(lambda x: x[1])
 		data['CashBack Reward'] = data.Amount * data['CashBack %']
@@ -97,25 +98,6 @@ class CsvLoader:
 			file = biggest[1]
 			assert file is not None
 		return os.path.join(RAW_TRANSACTIONS_DIR, file)
-
-	@staticmethod
-	def parse_note(note: str, sep: str = '|') -> tuple[str, float]:
-		'''
-		Split note on seperator string and return parsed note and cashback
-		:note: original note containing note message and cashback %
-		:sep: the string to split the note on
-		:return: note message and cashback percent in a tuple
-		'''
-		note = str(note)
-		if note == 'nan':
-			note = ''
-		if sep in note:
-			try:
-				note, cashback = map(lambda x: x.strip('%\n\r\t '), note.split(sep, 1))
-				return note, float(cashback) / 100
-			except ValueError:
-				pass
-		return note, 0.0
 
 	def read_starting_balances(self, year: int):
 		'''
