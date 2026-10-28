@@ -1,5 +1,6 @@
 from Loader import Loader
 from utils import *
+from glob import glob
 import datetime
 import pandas as pd
 from utils import parse_note
@@ -44,6 +45,29 @@ class CsvLoader(Loader):
 			self.data[year] = {}
 		self.data[year][month] = data.copy()
 		return data
+
+	def get_csv_filename_from_month(self, month: str, year: int) -> str:
+		# e.g. 'Transactions Nov 1, 2024 - Nov 30, 2024 (7).csv'
+		glob_pattern = RAW_TRANSACTION_FILENAME_FORMAT.format(month, year)
+		files = glob(
+			glob_pattern,
+			root_dir = RAW_TRANSACTIONS_DIR
+		)
+		if len(files) < 1:
+			raise FileNotFoundError(f'Could not find any matches for {glob_pattern}')
+		elif len(files) == 1:
+			file = files[0]
+		else:
+			biggest = -1, None
+			for file in files:
+				if '(' not in file:
+					continue
+				number = int(file[file.find('(') + 1 : file.find(')')])
+				if number > biggest[0]:
+					biggest = number, file
+			file = biggest[1]
+			assert file is not None
+		return os.path.join(RAW_TRANSACTIONS_DIR, file)
 
 	def load(self, starting_year: int):
 		'''
