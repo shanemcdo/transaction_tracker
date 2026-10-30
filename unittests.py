@@ -7,7 +7,8 @@ from pandas.testing import assert_frame_equal
 
 class TransactionTrackerTests(unittest.TestCase):
 
-	starting_year = int(getenv('STARTING_YEAR'))
+	def setUp(self):
+		self.starting_year = int(getenv('STARTING_YEAR'))
 
 	def test_compare_loads(self):
 		csv_loader = CSVLoader()
