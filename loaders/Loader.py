@@ -80,6 +80,7 @@ class Loader(ABC):
 		filename = os.path.join(BUDGETS_DIR, f'{year}{month:02d}budget.csv')
 		try:
 			df = pd.read_csv(filename)
+			assert (df.columns == ['Category', 'Expected']).all()
 		except FileNotFoundError as e:
 			if max_recursions < 1:
 				raise e
