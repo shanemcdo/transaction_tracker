@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest
-from CSVLoader import CSVLoader
-from SQLiteLoader import SQLiteLoader
+from loaders import CSVLoader, SQLiteLoader
 from pandas.testing import assert_frame_equal
 
 class TransactionTrackerTests(unittest.TestCase):

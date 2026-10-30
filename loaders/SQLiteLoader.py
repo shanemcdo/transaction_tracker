@@ -1,4 +1,4 @@
-from Loader import Loader
+from .Loader import Loader
 import sqlite3
 import datetime
 import calendar

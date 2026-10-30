@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
 from utils import *
-from CSVLoader import CSVLoader, Loader
-from SQLiteLoader import SQLiteLoader
-from ExcelWriter import ExcelWriter
-from SheetsWriter import SheetsWriter
+from loaders import SQLiteLoader, CSVLoader, Loader
+from writers import ExcelWriter, SheetsWriter
 from sys import argv
 import calendar
 

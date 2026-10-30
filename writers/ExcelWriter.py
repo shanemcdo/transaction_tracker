@@ -1,4 +1,4 @@
-from Loader import Loader
+from loaders import Loader
 from functools import reduce
 from itertools import chain
 from utils import *

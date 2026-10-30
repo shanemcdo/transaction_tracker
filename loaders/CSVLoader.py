@@ -1,4 +1,4 @@
-from Loader import Loader
+from .Loader import Loader
 from utils import *
 from glob import glob
 import datetime

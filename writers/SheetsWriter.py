@@ -1,4 +1,4 @@
-from Loader import Loader
+from loaders import Loader
 from utils import *
 import gspread
 import pandas as pd
