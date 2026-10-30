@@ -3,7 +3,6 @@ from utils import *
 from glob import glob
 import datetime
 import pandas as pd
-from utils import parse_note
 
 # unix glob format
 RAW_TRANSACTION_FILENAME_FORMAT = getenv('RAW_TRANSACTION_FILENAME_FORMAT')
