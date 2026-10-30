@@ -31,6 +31,7 @@ class CSVLoader(Loader):
 				# get rid of warning
 				engine='python'
 			).sort_values(by = 'Date')
+			assert (data.columns == [ 'Date', 'Category', 'Amount', 'Note', 'Account']).all()
 		except FileNotFoundError:
 			return None
 		data.Amount *= -1
