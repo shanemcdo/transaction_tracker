@@ -2,11 +2,12 @@
 
 import unittest
 from loaders import CSVLoader, SQLiteLoader
+from utils import getenv
 from pandas.testing import assert_frame_equal
 
 class TransactionTrackerTests(unittest.TestCase):
 
-	starting_year = 2024
+	starting_year = int(getenv('STARTING_YEAR'))
 
 	def test_compare_loads(self):
 		csv_loader = CSVLoader()
