@@ -1,5 +1,5 @@
 #!/bin/sh
-# The purpose of this script is to continually run and to
+# The purpose of this script is to continually run.sh and to
 # create a new generated sheet when new raw input is detected
 
 get_most_recent_export() {
@@ -28,19 +28,19 @@ while true; do
 		fi
 		echo "using load method: $load_method"
 		date
-		echo "Running run script"
-		./run "$load_method" >output.txt 2>&1
+		echo "Running run.sh script"
+		./run.sh "$load_method" >output.txt 2>&1
 		error_code="$?"
 		if [ "$error_code" -eq 2 ]; then # if auth token is expired
 			echo "Removing authorized user file"
 			./rm_auth_user.sh # remove authorized user file
-			echo "Re-Running run script"
-			./run >output.txt 2>&1
+			echo "Re-Running run.sh script"
+			./run.sh >output.txt 2>&1
 			error_code="$?"
 		fi
 		echo "Done"
 		if [ "$error_code" -ne 0 ]; then
-			echo "run script failed"
+			echo "run.sh script failed"
 			exit 1
 		fi
 	fi
