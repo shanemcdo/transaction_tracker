@@ -38,8 +38,9 @@ class SQLiteLoader(Loader):
 
 		default_acnt_pk,  = cur.execute('SELECT z_pk FROM zprofile WHERE zisdefault = 1').fetchone()
 
-		now = datetime.datetime.now()
-		_month_end_weekday, month_end = calendar.monthrange(now.year, now.month)
+		max_date = datetime.datetime.now()
+		max_date += datetime.timedelta(days = 1)
+		_month_end_weekday, month_end = calendar.monthrange(max_date.year, max_date.month)
 		query = f'''SELECT
 			datetime(tran.zdate + {EPOCH_OFFSET}, 'unixepoch') AS date_utc,
 			cat.zname,
@@ -50,7 +51,7 @@ class SQLiteLoader(Loader):
 			FROM ztransaction tran,
 			zcategory cat,
 			zprofile acnt
-			WHERE date_utc < datetime('{now.year}-{now.month}-{month_end} 23:59:59')
+			WHERE date_utc < datetime('{max_date.year}-{max_date.month}-{month_end} 23:59:59')
 			AND date_utc > datetime('{starting_year}-01-01 00:00:00')
 			AND tran.ztype <> 'Carry'
 			AND tran.zcategory = cat.z_pk
