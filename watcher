@@ -41,6 +41,8 @@ while true; do
 		echo "Done"
 		if [ "$error_code" -ne 0 ]; then
 			echo "run.sh script failed"
+			echo "Printing output log"
+			cat output.txt
 			exit 1
 		fi
 	fi
