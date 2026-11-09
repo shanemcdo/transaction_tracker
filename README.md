@@ -10,10 +10,16 @@ The `.env` file contains settings such as various directory paths, style counts,
 
 ### Transactions
 
+the account `$DEFAULT_ACCOUNT` is a monthly budget and other accounts are for earmarked categories such as "Emergency".
+
+#### CSV Option
+
+when `LOAD_METHOD` is set to `CSV`
+
 Looks for raw CSV data in the `$RAW_TRANSACTION_DIR` directory.
 The file name should match the `$RAW_TRANSACTION_FILENAME_FORMAT`.
 
-expects a csv file with 4 columns representing date, category, ammount, and note
+Expects a CSV file with 4 columns representing date, category, amount, and note
 
 ```
 Date,Category,Amount,Note,Account
@@ -22,7 +28,17 @@ Date,Category,Amount,Note,Account
 optionally if note contains a `|` then it will be split and the right side will be read
 as cashback percentage.
 
-the account `$DEFAULT_ACCOUNT` is a monthly budget and other accounts are for earmarked categories such as "Emergency".
+#### SQLite Option
+
+when `LOAD_METHOD` is set to `SQLite`
+
+Looks for backup file in `$BACKUP_DB_DIR` directory and `$AUTO_BACKUP_DB_DIR` directory.
+The file name should match the `$BACKUP_FILENAME_FORMAT` and `$AUTO_BACKUP_FILENAME_FORMAT` respectively.
+
+Expects a SQLite database file with `ZTRANSACTION`, `ZCATEGORY`, and `ZPROFILE`.
+This structure is found in the IOS app named "Spending Tracker".
+optionally if note contains a `|` then it will be split and the right side will be read
+as cashback percentage.
 
 ### Budgets
 
